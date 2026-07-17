@@ -1,0 +1,55 @@
+.legionary-sprite {
+  width: 64px;
+  height: 96px;
+  flex: 0 0 auto;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  animation: legionary-frames 1s steps(4) infinite;
+  transform-origin: bottom center;
+  filter: drop-shadow(4px 5px 0 rgba(22, 10, 7, 0.58));
+}
+
+.legionary-sprite--large {
+  transform: scale(3.2);
+  margin: 118px 96px 26px;
+}
+
+.legionary-sprite--small {
+  transform: scale(2.15);
+  margin: 74px 54px 30px;
+}
+
+.legionary-sprite--idle {
+  background-image: url('/assets/pixel/legionary-idle.png');
+}
+.legionary-sprite--preparing {
+  background-image: url('/assets/pixel/legionary-preparing.png');
+  animation-duration: 0.9s;
+}
+.legionary-sprite--focus {
+  background-image: url('/assets/pixel/legionary-focus.png');
+  animation-duration: 1.2s;
+}
+.legionary-sprite--paused {
+  background-image: url('/assets/pixel/legionary-paused.png');
+}
+.legionary-sprite--break {
+  background-image: url('/assets/pixel/legionary-break.png');
+  animation-duration: 1.4s;
+}
+.legionary-sprite--complete {
+  background-image: url('/assets/pixel/legionary-complete.png');
+  animation-duration: 0.8s;
+  animation-iteration-count: 2;
+}
+
+@keyframes legionary-frames {
+  from {
+    background-position-x: 0;
+  }
+  to {
+    background-position-x: -256px;
+  }
+}

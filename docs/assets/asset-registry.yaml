@@ -1,0 +1,156 @@
+schema_version: 1
+project: VIGIL
+updated_at: 2026-07-17
+rules:
+  production_requires_status: approved
+  exact_fidelity_assets_are_immutable: true
+  missing_dependencies_trigger_user_request: true
+  scaffold_assets_allowed_only_when_task_explicitly_permits: true
+
+assets:
+  - id: REF-UI-001
+    name: Legio Focus interface reference
+    category: visual-reference
+    status: reference-only
+    path: docs/assets/legio-focus-ui-reference.png
+    provenance: supplied-by-user-in-conversation
+    dimensions_px: [1672, 941]
+    permitted_usage:
+      - visual direction
+      - layout analysis
+      - component inventory
+    prohibited_usage:
+      - shipping as application background
+      - cropping into production controls
+      - claiming ownership of embedded artwork
+    notes: >-
+      Defines the requested dense Roman pixel-art dashboard direction. Implementation
+      must remain componentized with live HTML text and controls.
+
+  - id: SCAFFOLD-UI-001
+    name: Generated UI frames and textures
+    category: ui-kit
+    status: scaffold-only
+    source: scripts/generate_pixel_assets.py
+    implementation_paths:
+      - public/assets/ui/frames
+      - public/assets/ui/textures
+    permitted_usage:
+      - layout prototyping
+      - technical border-image experiments
+      - automated development screenshots
+    prohibited_usage:
+      - production art lock
+      - marketing screenshots
+
+  - id: SCAFFOLD-COMP-001
+    name: Generated legionary sprite sheets
+    category: character-sprite
+    status: scaffold-only
+    source: scripts/generate_pixel_assets.py
+    implementation_paths:
+      - public/assets/pixel/legionary-idle.png
+      - public/assets/pixel/legionary-preparing.png
+      - public/assets/pixel/legionary-focus.png
+      - public/assets/pixel/legionary-paused.png
+      - public/assets/pixel/legionary-break.png
+      - public/assets/pixel/legionary-complete.png
+    source_frame_px: [64, 96]
+    frames_per_state: 4
+    permitted_usage:
+      - prototype state synchronization
+      - layout and integer-scaling tests
+    prohibited_usage:
+      - final character art
+
+  - id: SCAFFOLD-BRAND-001
+    name: Generated VIGIL shield mark
+    category: brand-placeholder
+    status: scaffold-only
+    source: scripts/generate_pixel_assets.py
+    implementation_paths:
+      - public/assets/brand
+      - src-tauri/icons
+
+  - id: PROD-BRAND-001
+    name: Final product name and brand lockup
+    category: brand
+    status: request-user
+    required_by: v0.5.0
+    requested_files:
+      - editable vector logo or approved pixel master
+      - square application mark
+    required_decisions:
+      - final name VIGIL versus alternative
+      - wordmark spelling
+      - tagline
+      - permitted colour variants
+
+  - id: PROD-COMP-001
+    name: Production legionary companion sprite set
+    category: character-sprite
+    status: request-user
+    required_by: v0.1.0-art-lock
+    reference: REF-UI-001
+    requested_format:
+      - aseprite-or-layered-source
+      - transparent-png-sprite-sheets
+    source_frame_px: [64, 96]
+    required_states:
+      - idle
+      - preparing
+      - focusing
+      - paused
+      - short-break
+      - long-break
+      - complete
+      - reform
+    minimum_frames_per_state: 4
+    exact_requirements:
+      - consistent anatomy and equipment
+      - identical palette across states
+      - nearest-neighbour safe
+      - no baked background
+
+  - id: PROD-UI-001
+    name: Production Roman pixel UI kit
+    category: ui-kit
+    status: request-user
+    required_by: v0.1.0-art-lock
+    reference: REF-UI-001
+    requested_files:
+      - outer frame
+      - parchment 9-slice frame
+      - stone 9-slice frame
+      - dark 9-slice frame
+      - red active tab 9-slice
+      - green red orange purple button states
+      - laurel eagle standard and divider ornaments
+      - focus break settings statistics priority and metric icons
+    required_states:
+      - default
+      - hover
+      - pressed
+      - disabled
+      - keyboard-focus
+    rules:
+      - no functional text baked into assets
+      - corners must preserve shape under 9-slice scaling
+      - transparent backgrounds where applicable
+
+  - id: PROD-AUDIO-001
+    name: Focus ritual sound set
+    category: audio
+    status: request-user
+    required_by: v0.2.0
+    requested_files:
+      - focus-start
+      - focus-complete
+      - short-break
+      - long-break
+      - subtle-button
+    format: wav
+    requirements:
+      - user-owned-or-licensed
+      - no aggressive battle effects
+      - normalized loudness

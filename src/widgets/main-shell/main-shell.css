@@ -1,0 +1,940 @@
+.imperium-shell {
+  width: 100%;
+  height: 100vh;
+  min-height: 900px;
+  display: grid;
+  grid-template-rows: 122px minmax(0, 1fr) 166px 34px;
+  border: 8px solid transparent;
+  border-image: url('/assets/ui/frames/outer-frame.png') 8 fill stretch;
+  background:
+    linear-gradient(rgba(18, 10, 8, 0.18), rgba(18, 10, 8, 0.18)),
+    url('/assets/ui/textures/stone-wall-tile.png');
+  box-shadow: inset 0 0 0 4px #36160f;
+}
+
+.imperium-header {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(350px, 1fr) minmax(480px, 1.2fr) auto auto;
+  align-items: stretch;
+  border-bottom: 6px solid #21120f;
+  color: var(--bronze-300);
+  background:
+    linear-gradient(rgba(89, 12, 13, 0.42), rgba(54, 6, 8, 0.62)),
+    url('/assets/ui/textures/red-marble-tile.png');
+  box-shadow:
+    inset 0 -3px 0 var(--bronze-500),
+    inset 0 3px 0 #4a1e13;
+}
+
+.brand-command {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 12px 20px;
+  user-select: none;
+}
+
+.brand-command img {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  filter: drop-shadow(3px 4px 0 rgba(35, 10, 5, 0.8));
+}
+
+.brand-command div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.brand-command strong {
+  overflow: hidden;
+  color: var(--bronze-300);
+  font-size: clamp(1.35rem, 2vw, 2.05rem);
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-shadow: 3px 3px 0 #3b120d;
+  white-space: nowrap;
+}
+
+.brand-command div span {
+  color: #d59745;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.brand-laurel {
+  color: var(--bronze-300);
+  font-size: 2rem;
+  transform: rotate(-30deg);
+}
+
+.brand-laurel--right {
+  transform: scaleX(-1) rotate(-30deg);
+}
+
+.session-tabs {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  align-items: end;
+  padding-top: 14px;
+}
+
+.session-tab {
+  position: relative;
+  height: 84px;
+  display: grid;
+  place-content: center;
+  gap: 7px;
+  border: 5px solid #17110f;
+  border-bottom: 0;
+  color: #b99c77;
+  background:
+    linear-gradient(rgba(31, 27, 24, 0.78), rgba(21, 18, 16, 0.92)),
+    url('/assets/ui/textures/dark-stone-tile.png');
+  box-shadow:
+    inset 0 0 0 3px #5d3e28,
+    4px 0 0 rgba(28, 11, 7, 0.7);
+  text-transform: uppercase;
+}
+
+.session-tab span {
+  color: var(--bronze-400);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.session-tab strong {
+  font-size: 0.92rem;
+  letter-spacing: 0.06em;
+}
+
+.session-tab.is-active {
+  z-index: 1;
+  color: var(--bronze-300);
+  background:
+    linear-gradient(rgba(142, 29, 28, 0.82), rgba(100, 18, 18, 0.94)),
+    url('/assets/ui/textures/red-marble-tile.png');
+  box-shadow:
+    inset 0 0 0 3px #bd5b36,
+    4px 0 0 rgba(28, 11, 7, 0.7);
+}
+
+.session-tab:disabled {
+  opacity: 1;
+}
+
+.header-actions,
+.window-controls {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  padding: 16px 8px 0;
+}
+
+.header-actions button,
+.window-controls button {
+  width: 54px;
+  height: 48px;
+  border: 4px solid #1c110c;
+  color: var(--bronze-300);
+  background: #431b15;
+  box-shadow:
+    inset 0 0 0 3px #8a4c25,
+    3px 3px 0 rgba(22, 9, 5, 0.78);
+  font-family: Consolas, monospace;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.header-actions button:disabled {
+  opacity: 0.72;
+}
+
+.window-controls {
+  padding-right: 16px;
+}
+
+.window-controls button:last-child:hover {
+  background: var(--legion-700);
+}
+
+.imperium-main {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(330px, 29.5%) minmax(500px, 43.5%) minmax(300px, 27%);
+  gap: 0;
+  padding: 10px 12px 6px;
+}
+
+.campaign-board,
+.focus-chamber,
+.companion-stage-panel {
+  min-width: 0;
+  min-height: 0;
+}
+
+.campaign-board {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  color: var(--ink);
+}
+
+.panel-ribbon,
+.focus-ribbon {
+  position: relative;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin: -9px -8px 8px;
+  border: 4px solid #32120e;
+  color: var(--bronze-300);
+  background:
+    linear-gradient(rgba(122, 26, 24, 0.85), rgba(83, 14, 15, 0.92)),
+    url('/assets/ui/textures/red-marble-tile.png');
+  box-shadow: inset 0 0 0 2px #b55534;
+  text-transform: uppercase;
+}
+
+.panel-ribbon h2,
+.focus-ribbon h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+}
+
+.campaign-orders {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1.2fr repeat(3, 1fr);
+  overflow: hidden;
+  border: 3px solid #71583e;
+  background: url('/assets/ui/textures/parchment-tile.png');
+}
+
+.campaign-order {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 3px solid rgba(96, 72, 50, 0.46);
+}
+
+.campaign-order:last-child {
+  border-bottom: 0;
+}
+
+.campaign-order--active {
+  background: rgba(255, 242, 210, 0.38);
+}
+
+.order-check {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #4c3122;
+  background: rgba(255, 248, 224, 0.4);
+  box-shadow: inset 0 0 0 2px #d8be91;
+}
+
+.order-copy {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.order-copy > strong,
+.order-title-input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  font-size: clamp(0.86rem, 1.3vw, 1.08rem);
+  font-weight: 700;
+  outline-offset: 2px;
+}
+
+.order-title-input:disabled {
+  color: var(--ink);
+  opacity: 1;
+}
+
+.order-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #805d35;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.order-meta select {
+  border: 0;
+  padding: 0;
+  color: #8a361f;
+  background: transparent;
+  font-size: inherit;
+  font-weight: 900;
+}
+
+.priority-shield {
+  width: 13px;
+  height: 15px;
+  display: inline-block;
+  clip-path: polygon(50% 0, 100% 20%, 86% 77%, 50% 100%, 14% 77%, 0 20%);
+  background: #8b8373;
+  box-shadow: inset 0 0 0 2px #44382d;
+}
+
+.priority-shield--high {
+  background: #b93b24;
+}
+.priority-shield--medium {
+  background: #c89b25;
+}
+.priority-shield--low {
+  background: #817f76;
+}
+
+.order-flag {
+  color: #8d251d;
+  font-size: 1.3rem;
+}
+
+.victory-field {
+  display: grid;
+  gap: 5px;
+  padding: 8px 2px 3px;
+}
+
+.victory-field label,
+.formation-picker legend,
+.custom-duration-field label {
+  color: var(--bronze-300);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #422012;
+}
+
+.victory-field textarea {
+  min-height: 46px;
+  resize: none;
+  border: 3px solid #6c5038;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: rgba(243, 226, 188, 0.93);
+  box-shadow: inset 0 0 0 2px #d3b989;
+  font-size: 0.78rem;
+}
+
+.formation-picker {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+  border: 0;
+  padding: 3px 0 0;
+  margin: 0;
+}
+
+.formation-picker legend {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.formation-chip {
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  border: 3px solid #4d382c;
+  padding: 3px 2px;
+  color: #cbb28d;
+  background: #271c18;
+  box-shadow: inset 0 0 0 2px #5a4030;
+}
+
+.formation-chip input {
+  position: absolute;
+  opacity: 0;
+}
+
+.formation-chip strong {
+  font-family: Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.formation-chip span {
+  font-size: 0.52rem;
+  font-weight: 900;
+}
+
+.formation-chip.is-selected {
+  color: #2e160d;
+  border-color: #6b3c13;
+  background: var(--bronze-300);
+  box-shadow: inset 0 0 0 2px #fff1a1;
+}
+
+.formation-description {
+  min-height: 18px;
+  margin: 4px 0 0;
+  color: #d6b883;
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+
+.custom-duration-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 5px;
+}
+
+.custom-duration-field input {
+  width: 84px;
+  border: 3px solid #6c5038;
+  padding: 4px 6px;
+  color: var(--ink);
+  background: var(--parchment-50);
+}
+
+.campaign-board-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 3px -5px 0;
+  border-top: 3px solid #6e5138;
+  padding: 4px 10px 0;
+  color: #6d271c;
+  transform: translateY(-9px);
+  z-index: 2;
+  text-transform: uppercase;
+}
+
+.campaign-board-footer button {
+  border: 0;
+  padding: 0;
+  color: #4b3122;
+  background: transparent;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.campaign-board-footer button:disabled {
+  opacity: 0.75;
+}
+
+.campaign-board-footer strong {
+  font-size: 0.67rem;
+  letter-spacing: 0.08em;
+}
+
+.focus-chamber {
+  display: grid;
+  grid-template-rows: auto minmax(190px, 1fr) auto auto auto auto;
+  align-items: center;
+  color: var(--ink);
+  text-align: center;
+}
+
+.focus-ribbon {
+  width: 56%;
+  min-width: 330px;
+  justify-self: center;
+  margin: -5px 0 2px;
+  clip-path: polygon(
+    7% 0,
+    93% 0,
+    93% 12%,
+    100% 50%,
+    93% 88%,
+    93% 100%,
+    7% 100%,
+    7% 88%,
+    0 50%,
+    7% 12%
+  );
+}
+
+.laurel-timer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  align-self: stretch;
+  padding: 8px 18px 0;
+}
+
+.laurel-timer time {
+  min-width: 4.8ch;
+  color: #3c120e;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: clamp(4.6rem, 9vw, 8.6rem);
+  font-weight: 900;
+  letter-spacing: -0.09em;
+  line-height: 0.9;
+  text-shadow: 3px 3px 0 rgba(115, 74, 42, 0.14);
+}
+
+.laurel {
+  color: #a3651d;
+  font-size: clamp(2.4rem, 5vw, 4.6rem);
+  transform: rotate(-25deg);
+}
+
+.laurel--right {
+  transform: scaleX(-1) rotate(-25deg);
+}
+
+.timer-rule {
+  width: 75%;
+  height: 12px;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  border-top: 2px solid #6f563b;
+}
+
+.timer-rule span {
+  width: 7px;
+  height: 7px;
+  background: #7a4e23;
+  transform: translateY(-5px) rotate(45deg);
+}
+
+.focus-motto {
+  margin: 0;
+  color: #3f2d25;
+  font-size: clamp(0.82rem, 1.2vw, 1.08rem);
+  font-weight: 700;
+}
+
+.active-order-label {
+  max-width: 84%;
+  min-height: 1.5em;
+  justify-self: center;
+  overflow: hidden;
+  margin: 6px 0 0;
+  color: #8d4e28;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.focus-progress {
+  width: 78%;
+  height: 10px;
+  justify-self: center;
+  border: 3px solid #5e432e;
+  padding: 1px;
+  background: #2c211a;
+}
+
+.focus-progress div {
+  height: 100%;
+  background: linear-gradient(90deg, #a9621c, #e4b047);
+  transition: width 0.25s linear;
+}
+
+.focus-controls {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  align-self: end;
+  margin: 8px -8px -8px;
+  border-top: 9px solid #1d1815;
+  padding: 12px 10px 6px;
+  background: #28211e;
+  box-shadow: inset 0 3px 0 #594335;
+}
+
+.control-button {
+  min-height: 92px;
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  border: 5px solid #25150e;
+  padding: 8px;
+  color: #fff0c9;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 211, 112, 0.38),
+    3px 4px 0 rgba(19, 10, 7, 0.8);
+  text-transform: uppercase;
+}
+
+.control-button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 211, 112, 0.38),
+    2px 2px 0 rgba(19, 10, 7, 0.8);
+}
+
+.control-button:disabled {
+  filter: saturate(0.42);
+  opacity: 0.62;
+}
+
+.control-button--start {
+  background: #4c771f;
+}
+.control-button--pause {
+  background: #8f2a20;
+}
+.control-button--reset {
+  background: #ad5316;
+}
+.control-button--skip {
+  background: #51405d;
+}
+
+.control-icon {
+  font-family: Consolas, monospace;
+  font-size: 1.65rem;
+  line-height: 1;
+  text-shadow: 2px 2px 0 rgba(52, 19, 10, 0.75);
+}
+
+.control-button strong {
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+}
+
+.companion-stage-panel {
+  position: relative;
+  overflow: hidden;
+  color: var(--ink);
+  background:
+    linear-gradient(90deg, rgba(29, 22, 19, 0.16), rgba(12, 9, 8, 0.52)),
+    url('/assets/ui/textures/column-hall-tile.png');
+}
+
+.companion-stage-panel::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 21%;
+  content: '';
+  background:
+    linear-gradient(rgba(20, 15, 13, 0.1), rgba(10, 7, 6, 0.68)),
+    url('/assets/ui/textures/stone-floor-tile.png');
+  box-shadow: inset 0 4px 0 #4d3d32;
+}
+
+.companion-message {
+  position: absolute;
+  z-index: 4;
+  top: 18px;
+  left: 9%;
+  width: 58%;
+  min-height: 92px;
+  display: grid;
+  place-items: center;
+  border: 11px solid transparent;
+  border-image: url('/assets/ui/frames/parchment-frame.png') 14 fill stretch;
+  padding: 10px 14px;
+  color: #321b14;
+  font-size: clamp(0.78rem, 1.2vw, 1.05rem);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.companion-message::after {
+  position: absolute;
+  right: 13%;
+  bottom: -17px;
+  width: 16px;
+  height: 16px;
+  content: '';
+  border-right: 3px solid #7a5737;
+  border-bottom: 3px solid #7a5737;
+  background: #ead6aa;
+  transform: rotate(45deg);
+}
+
+.standard-banner {
+  position: absolute;
+  z-index: 3;
+  top: 2px;
+  right: 2%;
+  width: 92px;
+  height: 172px;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 12px;
+  border: 6px solid #5e2e16;
+  border-top-width: 12px;
+  padding-top: 26px;
+  color: var(--bronze-300);
+  background:
+    linear-gradient(rgba(133, 21, 20, 0.8), rgba(79, 9, 12, 0.92)),
+    url('/assets/ui/textures/red-marble-tile.png');
+  box-shadow:
+    inset 0 0 0 4px #c0712f,
+    5px 6px 0 rgba(15, 8, 5, 0.66);
+  clip-path: polygon(0 0, 100% 0, 100% 86%, 50% 100%, 0 86%);
+}
+
+.standard-banner span {
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.standard-banner strong {
+  font-size: 2.5rem;
+}
+
+.companion-figure {
+  position: absolute;
+  z-index: 2;
+  right: 8%;
+  bottom: 9%;
+  left: 0;
+  display: grid;
+  place-items: end center;
+}
+
+.pixel-brazier {
+  position: absolute;
+  z-index: 4;
+  right: 5%;
+  bottom: 7%;
+  width: 78px;
+  height: 120px;
+}
+
+.pixel-brazier i {
+  position: absolute;
+  right: 16px;
+  bottom: 0;
+  left: 16px;
+  height: 64px;
+  border: 7px solid #2a1910;
+  background: #8a421a;
+  box-shadow:
+    inset 0 0 0 5px #d4862a,
+    4px 4px 0 rgba(8, 5, 4, 0.64);
+  clip-path: polygon(
+    15% 0,
+    85% 0,
+    70% 35%,
+    85% 100%,
+    62% 100%,
+    50% 52%,
+    38% 100%,
+    15% 100%,
+    30% 35%
+  );
+}
+
+.flame {
+  position: absolute;
+  z-index: 2;
+  bottom: 48px;
+  left: 21px;
+  width: 38px;
+  height: 62px;
+  background: #e06922;
+  clip-path: polygon(52% 0, 82% 34%, 70% 58%, 100% 74%, 62% 100%, 25% 92%, 0 68%, 27% 46%);
+  animation: brazier-flicker 0.7s steps(2) infinite;
+}
+
+.flame--two {
+  bottom: 52px;
+  left: 31px;
+  width: 25px;
+  height: 45px;
+  background: #ffd55e;
+  animation-delay: 0.25s;
+}
+
+@keyframes brazier-flicker {
+  50% {
+    transform: translateY(3px) scaleX(0.9);
+  }
+}
+
+.campaign-summary {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34% 66%;
+  gap: 0;
+  padding: 0 12px 6px;
+}
+
+.campaign-progress-card {
+  color: #e6c990;
+}
+
+.campaign-progress-card header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -5px -5px 8px;
+  border-bottom: 3px solid #5d4430;
+  padding: 0 5px 8px;
+  color: var(--bronze-300);
+}
+
+.campaign-progress-card h2 {
+  margin: 0;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.campaign-progress-copy {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.campaign-progress-track {
+  height: 17px;
+  border: 3px solid #27160e;
+  padding: 2px;
+  margin: 8px 0;
+  background: #4a2917;
+}
+
+.campaign-progress-track div {
+  height: 100%;
+  background: linear-gradient(90deg, #d17715, #ffc34f);
+}
+
+.campaign-progress-card p {
+  margin: 0;
+  color: #d5b880;
+  font-size: 0.67rem;
+  line-height: 1.35;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0;
+  color: var(--ink);
+}
+
+.metric-grid article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr auto;
+  align-items: center;
+  column-gap: 8px;
+  border-right: 3px solid rgba(99, 74, 50, 0.42);
+  padding: 9px 14px;
+}
+
+.metric-grid article:last-child {
+  border-right: 0;
+}
+
+.metric-grid article > span {
+  grid-row: 1 / -1;
+  color: #a86e20;
+  font-size: 1.65rem;
+}
+
+.metric-grid small,
+.metric-grid em {
+  font-size: 0.58rem;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.metric-grid strong {
+  align-self: center;
+  font-family: Consolas, monospace;
+  font-size: clamp(1.25rem, 2.4vw, 2rem);
+  line-height: 1;
+}
+
+.motto-ribbon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-top: 4px solid #6e3c1c;
+  color: var(--bronze-300);
+  background:
+    linear-gradient(rgba(126, 20, 20, 0.78), rgba(70, 8, 10, 0.94)),
+    url('/assets/ui/textures/red-marble-tile.png');
+  box-shadow: inset 0 3px 0 #b05a2a;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.24em;
+}
+
+.motto-ribbon small {
+  position: absolute;
+  right: 14px;
+  color: #b67b3d;
+  font-family: Consolas, monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+}
+
+@media (max-height: 760px) {
+  .imperium-shell {
+    grid-template-rows: 106px minmax(450px, 1fr) 150px 32px;
+  }
+
+  .session-tab {
+    height: 74px;
+  }
+  .control-button {
+    min-height: 78px;
+  }
+  .companion-message {
+    min-height: 72px;
+  }
+}
+
+@media (max-width: 1240px) {
+  .imperium-header {
+    grid-template-columns: 330px minmax(420px, 1fr) auto auto;
+  }
+
+  .brand-laurel {
+    display: none;
+  }
+  .imperium-main {
+    grid-template-columns: 31% 43% 26%;
+  }
+  .standard-banner {
+    width: 72px;
+  }
+  .companion-message {
+    width: 66%;
+    left: 3%;
+  }
+  .metric-grid article {
+    padding-inline: 8px;
+  }
+}

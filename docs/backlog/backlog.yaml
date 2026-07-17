@@ -1,0 +1,272 @@
+project: VIGIL
+current_version: 0.0.2
+next_release: 0.0.3
+updated_at: 2026-07-17
+
+items:
+  - id: VIGIL-UI-001
+    phase: P0-B
+    version: 0.0.2
+    status: done
+    priority: P0
+    title: Componentize Roman pixel dashboard
+    asset_dependencies:
+      - REF-UI-001
+      - SCAFFOLD-UI-001
+      - SCAFFOLD-COMP-001
+    objective: Rebuild the supplied visual direction as semantic dashboard regions rather than a flat image.
+    acceptance:
+      - Campaign, timer, companion and summary are separate widgets.
+      - Functional text is live HTML.
+      - Main shell uses a 1600x900 baseline and remains usable at 1280x800.
+
+  - id: VIGIL-ASSET-001
+    phase: P0-B
+    version: 0.0.2
+    status: done
+    priority: P0
+    title: Enforce user asset dependency gate
+    asset_dependencies:
+      - NONE
+    objective: Force coding agents to request missing visual/files from the user and stop the task.
+    acceptance:
+      - AGENTS.md contains mandatory stop conditions.
+      - Asset registry and request template exist.
+      - Scaffold assets cannot be marked production-approved silently.
+
+  - id: VIGIL-STANDARDS-001
+    phase: P0-B
+    version: 0.0.2
+    status: done
+    priority: P0
+    title: Establish coding and quality standards
+    asset_dependencies:
+      - NONE
+    objective: Give agents enforceable TypeScript, React, CSS, Rust, Tauri, testing, security and versioning rules.
+    acceptance:
+      - Standards are linked from START-HERE and AGENTS.
+      - Official source register maps research to decisions.
+      - CI validation commands are documented.
+
+  - id: VIGIL-UI-002
+    phase: P0-C
+    version: 0.0.3
+    status: ready
+    priority: P0
+    title: Add deterministic dashboard visual tests
+    asset_dependencies:
+      - SCAFFOLD-UI-001
+      - SCAFFOLD-COMP-001
+    objective: Detect layout and pixel-scaling regressions without treating scaffold art as final.
+    acceptance:
+      - 1600x900 and 1280x800 screenshots are deterministic.
+      - Time and animations are frozen.
+      - Baseline update procedure distinguishes scaffold and production assets.
+
+  - id: VIGIL-UI-003
+    phase: P0-C
+    version: 0.0.3
+    status: ready
+    priority: P0
+    title: Complete keyboard and control-state pass
+    asset_dependencies:
+      - SCAFFOLD-UI-001
+    objective: Make every visible control semantically correct and keyboard operable.
+    acceptance:
+      - Focus order preserves visual meaning.
+      - Focus indicators remain visible over ornate frames.
+      - Disabled roadmap controls communicate unavailability.
+
+  - id: VIGIL-ASSET-002
+    phase: P0-C
+    version: 0.0.3
+    status: blocked-user
+    priority: P1
+    title: Request production UI kit
+    asset_dependencies:
+      - PROD-UI-001
+    objective: Obtain editable/approved production frames, controls, ornaments and icons.
+    acceptance:
+      - User supplies files or explicitly authorizes deferral.
+      - Registry records provenance and review status.
+      - Implementation does not continue as an art-lock task before response.
+
+  - id: VIGIL-ASSET-003
+    phase: P0-C
+    version: 0.0.3
+    status: blocked-user
+    priority: P1
+    title: Request production legionary sprite set
+    asset_dependencies:
+      - PROD-COMP-001
+    objective: Obtain consistent production character states.
+    acceptance:
+      - All required animation states and source files are supplied or deferred.
+      - Frame dimensions and palette are verified.
+      - Registry reaches approved before production baseline.
+
+  - id: VIGIL-001
+    phase: P0-D
+    version: 0.0.4
+    status: ready
+    priority: P0
+    title: Choose authoritative cross-window session ownership
+    asset_dependencies:
+      - NONE
+    objective: Prove one source of truth shared by main and companion windows.
+    acceptance:
+      - A session state update in one window appears in the other.
+      - Reloading one webview does not create an independent timer.
+      - Decision is recorded in an ADR.
+
+  - id: VIGIL-002
+    phase: P0-D
+    version: 0.0.4
+    status: ready
+    priority: P0
+    title: Implement SQLite migration spike
+    asset_dependencies:
+      - NONE
+    objective: Create, migrate, insert and query a focus session locally.
+    acceptance:
+      - Migration runs on a clean profile.
+      - Re-running migration is safe.
+      - Integration test reads the inserted record.
+
+  - id: VIGIL-003
+    phase: P0-D
+    version: 0.0.4
+    status: ready
+    priority: P0
+    title: Separate and review Tauri capabilities
+    asset_dependencies:
+      - NONE
+    objective: Replace shared/default assumptions with minimum per-window permissions.
+    acceptance:
+      - Every permission maps to a documented use case.
+      - Main and companion capability differences are explicit.
+      - No shell or broad filesystem permission exists.
+      - CSP decision is documented.
+
+  - id: VIGIL-004
+    phase: P1
+    version: 0.1.0
+    status: planned
+    priority: P0
+    title: Build authoritative session state machine
+    asset_dependencies:
+      - NONE
+    objective: Implement canonical commands, transitions and idempotency.
+    acceptance:
+      - Invalid transitions return typed errors.
+      - Duplicate completion creates one record.
+      - Unit tests cover every transition.
+
+  - id: VIGIL-005
+    phase: P1
+    version: 0.1.0
+    status: planned
+    priority: P0
+    title: Persist missions and sessions
+    asset_dependencies:
+      - NONE
+    objective: Replace prototype browser persistence with repositories and migrations.
+    acceptance:
+      - Records survive restart.
+      - Active-session query returns at most one session.
+      - Repository tests pass.
+
+  - id: VIGIL-006
+    phase: P1
+    version: 0.1.0
+    status: planned
+    priority: P0
+    title: Synchronize companion state
+    asset_dependencies:
+      - PROD-COMP-001
+    objective: Drive animation and controls from authoritative domain events.
+    acceptance:
+      - Preparing/focusing/paused/complete states match in both windows.
+      - Companion reload does not reset session.
+      - Missing production sprite dependency triggers the user request gate.
+
+  - id: VIGIL-007
+    phase: P1
+    version: 0.1.0
+    status: planned
+    priority: P0
+    title: Recover session after restart
+    asset_dependencies:
+      - NONE
+    objective: Recalculate remaining time and restore controls safely.
+    acceptance:
+      - Forced process termination does not lose active session.
+      - Recovery cannot duplicate completion.
+
+  - id: VIGIL-008
+    phase: P1
+    version: 0.1.0
+    status: planned
+    priority: P1
+    title: Implement abandon flow
+    asset_dependencies:
+      - NONE
+    objective: Record focused duration and optional neutral interruption reason.
+    acceptance:
+      - No completed-session reward is granted.
+      - Recorded focus time is preserved.
+
+  - id: VIGIL-009
+    phase: P1
+    version: 0.1.0
+    status: planned
+    priority: P1
+    title: Make click-through recoverable
+    asset_dependencies:
+      - NONE
+    objective: Guarantee the companion can always be interacted with again.
+    acceptance:
+      - Tray or global shortcut disables click-through.
+      - Recovery path is documented in UI.
+
+  - id: VIGIL-010
+    phase: P1
+    version: 0.1.0
+    status: planned
+    priority: P1
+    title: Clamp companion to monitor work area
+    asset_dependencies:
+      - NONE
+    objective: Keep companion reachable across display changes.
+    acceptance:
+      - Removing a secondary display moves companion to primary display.
+      - Saved off-screen coordinates are repaired.
+
+  - id: VIGIL-011
+    phase: P1
+    version: 0.1.0
+    status: planned
+    priority: P1
+    title: Add v0.1 end-to-end tests
+    asset_dependencies:
+      - PROD-UI-001
+      - PROD-COMP-001
+    objective: Automate mission-to-history critical path and approved visual baseline.
+    acceptance:
+      - Happy path and restart recovery are automated.
+      - CI publishes test result on pull requests.
+      - Production screenshot baselines use approved assets only.
+
+  - id: VIGIL-012
+    phase: P1
+    version: 0.1.0
+    status: planned
+    priority: P1
+    title: Conduct five-user task test
+    asset_dependencies:
+      - NONE
+    objective: Validate activation, dashboard clarity and companion distraction assumptions.
+    acceptance:
+      - Five complete sessions observed.
+      - Findings and severity are documented.
+      - P0/P1 findings are resolved or release-blocking.

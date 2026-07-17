@@ -1,0 +1,68 @@
+html:has(.overlay-root),
+body:has(.overlay-root),
+#root:has(.overlay-root) {
+  width: 100%;
+  min-height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+.overlay-root {
+  min-height: 100vh;
+  display: grid;
+  place-items: end center;
+  padding: 10px;
+  background: transparent;
+}
+
+.overlay-card {
+  width: 190px;
+  min-height: 272px;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  border: 3px solid rgba(189, 138, 72, 0.88);
+  padding: 8px 10px 12px;
+  color: var(--parchment);
+  background: rgba(21, 17, 15, 0.9);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.42);
+}
+
+.drag-handle {
+  width: 100%;
+  padding: 5px;
+  color: var(--bronze-bright);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-align: center;
+  cursor: grab;
+}
+
+.overlay-mission {
+  width: 100%;
+  overflow: hidden;
+  color: var(--parchment);
+  font-size: 0.72rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overlay-time {
+  margin: 6px 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.overlay-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.overlay-actions button {
+  width: 34px;
+  height: 30px;
+  border: 2px solid var(--bronze);
+  color: var(--parchment);
+  background: var(--stone-800);
+}

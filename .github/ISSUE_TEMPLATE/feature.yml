@@ -1,0 +1,39 @@
+name: Scoped feature
+body:
+  - type: input
+    id: task
+    attributes:
+      label: Task ID
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Target version
+    validations:
+      required: true
+  - type: input
+    id: assets
+    attributes:
+      label: Asset dependency IDs
+      description: Use IDs from docs/assets/asset-registry.yaml or NONE.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Observable outcome
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope / out of scope
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true

@@ -1,0 +1,151 @@
+import { useEffect } from 'react';
+import { formatDuration } from '@/entities/focus-session/lib/time';
+import { useFocusStore } from '@/features/focus-session/model/useFocusStore';
+import { nativeBridge } from '@/shared/lib/nativeBridge';
+
+function phaseCopy(phase: ReturnType<typeof useFocusStore.getState>['phase']): string {
+  switch (phase) {
+    case 'preparing':
+      return 'Forming the line…';
+    case 'focusing':
+      return 'Stay focused. Build your empire.';
+    case 'paused':
+      return 'Formation held. Resume when ready.';
+    case 'complete':
+      return 'Watch complete. Record the result.';
+    default:
+      return 'Define one mission, then hold the line.';
+  }
+}
+
+export function FocusChamber() {
+  const {
+    missionTitle,
+    phase,
+    remainingSeconds,
+    plannedDurationSeconds,
+    startSession,
+    pauseSession,
+    resumeSession,
+    resetSession,
+    tick,
+  } = useFocusStore();
+
+  useEffect(() => {
+    if (phase !== 'focusing') return;
+    tick();
+    const intervalId = window.setInterval(() => tick(), 250);
+    return () => window.clearInterval(intervalId);
+  }, [phase, tick]);
+
+  const elapsedPercent = Math.max(
+    0,
+    Math.min(100, ((plannedDurationSeconds - remainingSeconds) / plannedDurationSeconds) * 100),
+  );
+
+  function handlePrimaryAction() {
+    if (phase === 'idle') {
+      startSession();
+      void nativeBridge.showCompanion();
+      return;
+    }
+    if (phase === 'paused') {
+      resumeSession();
+      return;
+    }
+    if (phase === 'complete') {
+      resetSession();
+      void nativeBridge.hideCompanion();
+    }
+  }
+
+  const primaryLabel = phase === 'paused' ? 'Resume' : phase === 'complete' ? 'Record' : 'Start';
+  const primaryDisabled =
+    phase === 'preparing' ||
+    phase === 'focusing' ||
+    phase === 'break' ||
+    phase === 'abandoned' ||
+    (phase === 'idle' && missionTitle.trim().length === 0);
+
+  return (
+    <section
+      className="focus-chamber pixel-frame pixel-frame--parchment"
+      aria-labelledby="focus-time-title"
+    >
+      <header className="focus-ribbon">
+        <span aria-hidden="true">◆</span>
+        <h2 id="focus-time-title">Focus Time</h2>
+        <span aria-hidden="true">◆</span>
+      </header>
+
+      <div className="laurel-timer" aria-live="polite">
+        <span className="laurel laurel--left" aria-hidden="true">
+          ❧
+        </span>
+        <time aria-label={`${remainingSeconds} seconds remaining`}>
+          {formatDuration(remainingSeconds)}
+        </time>
+        <span className="laurel laurel--right" aria-hidden="true">
+          ❧
+        </span>
+      </div>
+
+      <div className="timer-rule" aria-hidden="true">
+        <span />
+      </div>
+      <p className="focus-motto">{phaseCopy(phase)}</p>
+      <p className="active-order-label">{missionTitle || 'Awaiting a campaign order'}</p>
+
+      <div className="focus-progress" aria-label={`${Math.round(elapsedPercent)} percent elapsed`}>
+        <div style={{ width: `${elapsedPercent}%` }} />
+      </div>
+
+      <div className="focus-controls">
+        <button
+          className="control-button control-button--start"
+          type="button"
+          disabled={primaryDisabled}
+          onClick={handlePrimaryAction}
+        >
+          <span className="control-icon" aria-hidden="true">
+            ▶
+          </span>
+          <strong>{primaryLabel}</strong>
+        </button>
+        <button
+          className="control-button control-button--pause"
+          type="button"
+          disabled={phase !== 'focusing'}
+          onClick={pauseSession}
+        >
+          <span className="control-icon" aria-hidden="true">
+            Ⅱ
+          </span>
+          <strong>Pause</strong>
+        </button>
+        <button
+          className="control-button control-button--reset"
+          type="button"
+          disabled={!['idle', 'complete'].includes(phase)}
+          onClick={resetSession}
+        >
+          <span className="control-icon" aria-hidden="true">
+            ↻
+          </span>
+          <strong>Reset</strong>
+        </button>
+        <button
+          className="control-button control-button--skip"
+          type="button"
+          disabled
+          title="Break skipping is introduced with the Doctrine flow in v0.2.0"
+        >
+          <span className="control-icon" aria-hidden="true">
+            ▶▶
+          </span>
+          <strong>Skip</strong>
+        </button>
+      </div>
+    </section>
+  );
+}

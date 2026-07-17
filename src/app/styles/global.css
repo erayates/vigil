@@ -1,0 +1,148 @@
+:root {
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #32130f;
+  background: #160f0d;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  --ink: #32130f;
+  --ink-soft: #674a3b;
+  --stone-975: #100b0a;
+  --stone-950: #160f0d;
+  --stone-900: #211816;
+  --stone-850: #2c211d;
+  --stone-800: #3a2d27;
+  --stone-700: #5a4638;
+  --parchment-50: #f4e7c8;
+  --parchment-100: #e8d4ad;
+  --parchment-200: #d3b989;
+  --bronze-500: #bd7f2c;
+  --bronze-400: #d99f43;
+  --bronze-300: #f1c36a;
+  --gold-shadow: #6e3f13;
+  --legion-900: #48110f;
+  --legion-800: #681b19;
+  --legion-700: #8f2521;
+  --legion-600: #b53c2e;
+  --olive-700: #46641e;
+  --olive-600: #5f8428;
+  --orange-700: #a34b13;
+  --purple-700: #4d3b59;
+  --focus-ring: #fff0a6;
+  --pixel-unit: 2px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 1280px;
+  min-height: 100%;
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  overflow: auto;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    url('/assets/ui/textures/dark-stone-tile.png'), var(--stone-950);
+  background-size:
+    16px 16px,
+    16px 16px,
+    32px 32px,
+    auto;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled,
+fieldset:disabled {
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #8f7664;
+  opacity: 1;
+}
+
+.pixel-frame {
+  position: relative;
+  border: 14px solid transparent;
+  isolation: isolate;
+}
+
+.pixel-frame--stone {
+  border-image: url('/assets/ui/frames/stone-frame.png') 14 fill stretch;
+  background: var(--stone-850);
+}
+
+.pixel-frame--dark {
+  border-image: url('/assets/ui/frames/dark-frame.png') 14 fill stretch;
+  background: var(--stone-975);
+}
+
+.pixel-frame--parchment {
+  border-image: url('/assets/ui/frames/parchment-frame.png') 14 fill stretch;
+  background: var(--parchment-50);
+}
+
+.sprite,
+.pixel-art,
+.legionary-sprite {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
