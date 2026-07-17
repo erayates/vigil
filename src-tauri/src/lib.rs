@@ -1,10 +1,13 @@
 pub mod db;
+pub mod repository;
 mod session;
 
+use rusqlite::Connection;
 use session::{SessionSnapshot, SessionState};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{Emitter, Manager};
+use uuid::Uuid;
 
 fn now_ms() -> i64 {
     SystemTime::now()
@@ -15,6 +18,16 @@ fn now_ms() -> i64 {
 
 fn broadcast(app: &tauri::AppHandle, snapshot: &SessionSnapshot) {
     let _ = app.emit("session://changed", snapshot);
+}
+
+/// Mirror the authoritative session into SQLite (best-effort). The in-memory
+/// state stays authoritative even if a write fails.
+fn persist(db: &tauri::State<'_, Mutex<Connection>>, session: &SessionState, now_ms: i64) {
+    let focused = session.focused_secs(now_ms);
+    let conn = db.lock().unwrap();
+    if let Err(error) = repository::record_session(&conn, session, focused, now_ms) {
+        eprintln!("[vigil] session persist failed: {error}");
+    }
 }
 
 fn webview_window(app: &tauri::AppHandle, label: &str) -> Result<tauri::WebviewWindow, String> {
@@ -85,84 +98,26 @@ fn session_start(
     let snapshot = {
         let mut session = state.lock().unwrap();
         session
-            .start(mission_title, victory_condition, planned_duration_secs)
+            .start(
+                Uuid::new_v4().to_string(),
+                Uuid::new_v4().to_string(),
+                mission_title,
+                victory_condition,
+                planned_duration_secs,
+            )
             .map_err(|_| "invalid transition".to_string())?;
+        // Preparing has no started_at yet; the durable row appears at `begin`.
         session.snapshot(now)
     };
     broadcast(&app, &snapshot);
     Ok(snapshot)
-}
-
-#[tauri::command]
-fn session_pause(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, Mutex<SessionState>>,
-) -> Result<SessionSnapshot, String> {
-    let now = now_ms();
-    let snapshot = {
-        let mut session = state.lock().unwrap();
-        session
-            .pause(now)
-            .map_err(|_| "invalid transition".to_string())?;
-        session.snapshot(now)
-    };
-    broadcast(&app, &snapshot);
-    Ok(snapshot)
-}
-
-#[tauri::command]
-fn session_resume(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, Mutex<SessionState>>,
-) -> Result<SessionSnapshot, String> {
-    let now = now_ms();
-    let snapshot = {
-        let mut session = state.lock().unwrap();
-        session
-            .resume(now)
-            .map_err(|_| "invalid transition".to_string())?;
-        session.snapshot(now)
-    };
-    broadcast(&app, &snapshot);
-    Ok(snapshot)
-}
-
-#[tauri::command]
-fn session_complete(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, Mutex<SessionState>>,
-) -> Result<SessionSnapshot, String> {
-    let now = now_ms();
-    let snapshot = {
-        let mut session = state.lock().unwrap();
-        session
-            .complete()
-            .map_err(|_| "invalid transition".to_string())?;
-        session.snapshot(now)
-    };
-    broadcast(&app, &snapshot);
-    Ok(snapshot)
-}
-
-#[tauri::command]
-fn session_reset(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, Mutex<SessionState>>,
-) -> SessionSnapshot {
-    let now = now_ms();
-    let snapshot = {
-        let mut session = state.lock().unwrap();
-        session.reset();
-        session.snapshot(now)
-    };
-    broadcast(&app, &snapshot);
-    snapshot
 }
 
 #[tauri::command]
 fn session_begin(
     app: tauri::AppHandle,
     state: tauri::State<'_, Mutex<SessionState>>,
+    db: tauri::State<'_, Mutex<Connection>>,
 ) -> Result<SessionSnapshot, String> {
     let now = now_ms();
     let snapshot = {
@@ -170,6 +125,7 @@ fn session_begin(
         session
             .begin(now)
             .map_err(|_| "invalid transition".to_string())?;
+        persist(&db, &session, now);
         session.snapshot(now)
     };
     broadcast(&app, &snapshot);
@@ -194,9 +150,67 @@ fn session_cancel(
 }
 
 #[tauri::command]
+fn session_pause(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+    db: tauri::State<'_, Mutex<Connection>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .pause(now)
+            .map_err(|_| "invalid transition".to_string())?;
+        persist(&db, &session, now);
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn session_resume(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+    db: tauri::State<'_, Mutex<Connection>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .resume(now)
+            .map_err(|_| "invalid transition".to_string())?;
+        persist(&db, &session, now);
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn session_complete(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+    db: tauri::State<'_, Mutex<Connection>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .complete()
+            .map_err(|_| "invalid transition".to_string())?;
+        persist(&db, &session, now);
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
 fn session_abandon(
     app: tauri::AppHandle,
     state: tauri::State<'_, Mutex<SessionState>>,
+    db: tauri::State<'_, Mutex<Connection>>,
 ) -> Result<SessionSnapshot, String> {
     let now = now_ms();
     let snapshot = {
@@ -204,16 +218,41 @@ fn session_abandon(
         session
             .abandon()
             .map_err(|_| "invalid transition".to_string())?;
+        persist(&db, &session, now);
         session.snapshot(now)
     };
     broadcast(&app, &snapshot);
     Ok(snapshot)
 }
 
+#[tauri::command]
+fn session_reset(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> SessionSnapshot {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session.reset();
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    snapshot
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(Mutex::new(SessionState::idle()))
+        .setup(|app| {
+            let mut path = app.path().app_data_dir()?;
+            std::fs::create_dir_all(&path)?;
+            path.push("vigil.db");
+            let db_path = path.to_str().ok_or("database path is not valid UTF-8")?;
+            let connection = db::open(db_path)?;
+            app.manage(Mutex::new(connection));
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             show_companion,
             hide_companion,

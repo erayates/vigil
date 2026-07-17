@@ -165,7 +165,7 @@ items:
   - id: VIGIL-005
     phase: P1
     version: 0.1.0
-    status: planned
+    status: done
     priority: P0
     title: Persist missions and sessions
     asset_dependencies:
