@@ -1,4 +1,20 @@
-use tauri::Manager;
+mod session;
+
+use session::{SessionSnapshot, SessionState};
+use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::{Emitter, Manager};
+
+fn now_ms() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as i64
+}
+
+fn broadcast(app: &tauri::AppHandle, snapshot: &SessionSnapshot) {
+    let _ = app.emit("session://changed", snapshot);
+}
 
 fn webview_window(app: &tauri::AppHandle, label: &str) -> Result<tauri::WebviewWindow, String> {
     app.get_webview_window(label)
@@ -51,16 +67,114 @@ fn close_main(app: tauri::AppHandle) -> Result<(), String> {
         .map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+fn session_get(state: tauri::State<'_, Mutex<SessionState>>) -> SessionSnapshot {
+    state.lock().unwrap().snapshot(now_ms())
+}
+
+#[tauri::command]
+fn session_start(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+    mission_title: String,
+    victory_condition: String,
+    planned_duration_secs: u64,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .start(mission_title, victory_condition, planned_duration_secs, now)
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn session_pause(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .pause(now)
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn session_resume(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .resume(now)
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn session_complete(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .complete(now)
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn session_reset(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> SessionSnapshot {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session.reset();
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    snapshot
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(Mutex::new(SessionState::idle()))
         .invoke_handler(tauri::generate_handler![
             show_companion,
             hide_companion,
             set_companion_click_through,
             minimize_main,
             toggle_maximize_main,
-            close_main
+            close_main,
+            session_get,
+            session_start,
+            session_pause,
+            session_resume,
+            session_complete,
+            session_reset
         ])
         .run(tauri::generate_context!())
         .expect("error while running VIGIL");
