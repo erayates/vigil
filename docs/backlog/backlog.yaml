@@ -151,7 +151,7 @@ items:
   - id: VIGIL-004
     phase: P1
     version: 0.1.0
-    status: planned
+    status: done
     priority: P0
     title: Build authoritative session state machine
     asset_dependencies:

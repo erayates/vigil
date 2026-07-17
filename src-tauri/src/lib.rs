@@ -85,7 +85,7 @@ fn session_start(
     let snapshot = {
         let mut session = state.lock().unwrap();
         session
-            .start(mission_title, victory_condition, planned_duration_secs, now)
+            .start(mission_title, victory_condition, planned_duration_secs)
             .map_err(|_| "invalid transition".to_string())?;
         session.snapshot(now)
     };
@@ -136,7 +136,7 @@ fn session_complete(
     let snapshot = {
         let mut session = state.lock().unwrap();
         session
-            .complete(now)
+            .complete()
             .map_err(|_| "invalid transition".to_string())?;
         session.snapshot(now)
     };
@@ -159,6 +159,57 @@ fn session_reset(
     snapshot
 }
 
+#[tauri::command]
+fn session_begin(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .begin(now)
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn session_cancel(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .cancel()
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn session_abandon(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .abandon()
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -172,6 +223,9 @@ pub fn run() {
             close_main,
             session_get,
             session_start,
+            session_begin,
+            session_cancel,
+            session_abandon,
             session_pause,
             session_resume,
             session_complete,

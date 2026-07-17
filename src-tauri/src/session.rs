@@ -4,9 +4,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "lowercase")]
 pub enum Phase {
     Idle,
+    Preparing,
     Focusing,
     Paused,
     Complete,
+    Abandoned,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -51,23 +53,43 @@ impl SessionState {
         }
     }
 
+    /// START — begin a new session's preparation. The timer does not run yet;
+    /// `begin` stamps the real start once preparation finishes.
     pub fn start(
         &mut self,
         mission: String,
         victory: String,
         planned_secs: u64,
-        now_ms: i64,
     ) -> Result<(), SessionError> {
-        if !matches!(self.phase, Phase::Idle | Phase::Complete) {
+        if !matches!(self.phase, Phase::Idle | Phase::Complete | Phase::Abandoned) {
             return Err(SessionError::InvalidTransition);
         }
-        self.phase = Phase::Focusing;
+        self.phase = Phase::Preparing;
         self.mission_title = mission;
         self.victory_condition = victory;
         self.planned_duration_secs = planned_secs;
-        self.started_at_ms = Some(now_ms);
+        self.started_at_ms = None;
         self.total_paused_ms = 0;
         self.pause_started_at_ms = None;
+        Ok(())
+    }
+
+    /// PREPARATION_FINISHED — the companion has formed up; start the timer.
+    pub fn begin(&mut self, now_ms: i64) -> Result<(), SessionError> {
+        if self.phase != Phase::Preparing {
+            return Err(SessionError::InvalidTransition);
+        }
+        self.phase = Phase::Focusing;
+        self.started_at_ms = Some(now_ms);
+        Ok(())
+    }
+
+    /// CANCEL — abort during preparation, before the timer ran.
+    pub fn cancel(&mut self) -> Result<(), SessionError> {
+        if self.phase != Phase::Preparing {
+            return Err(SessionError::InvalidTransition);
+        }
+        *self = SessionState::idle();
         Ok(())
     }
 
@@ -93,11 +115,24 @@ impl SessionState {
         Ok(())
     }
 
-    pub fn complete(&mut self, _now_ms: i64) -> Result<(), SessionError> {
+    /// COMPLETE — TIMER_ELAPSED or COMPLETE_EARLY. Idempotent: only Focusing or
+    /// Paused can complete, so a second call is rejected and no duplicate occurs.
+    pub fn complete(&mut self) -> Result<(), SessionError> {
         if !matches!(self.phase, Phase::Focusing | Phase::Paused) {
             return Err(SessionError::InvalidTransition);
         }
         self.phase = Phase::Complete;
+        self.pause_started_at_ms = None;
+        Ok(())
+    }
+
+    /// ABANDON — interrupt an active session without a completion reward. The
+    /// flow that captures a reason is VIGIL-008; this is only the transition.
+    pub fn abandon(&mut self) -> Result<(), SessionError> {
+        if !matches!(self.phase, Phase::Focusing | Phase::Paused) {
+            return Err(SessionError::InvalidTransition);
+        }
+        self.phase = Phase::Abandoned;
         self.pause_started_at_ms = None;
         Ok(())
     }
@@ -138,34 +173,79 @@ impl SessionState {
 mod tests {
     use super::*;
 
-    #[test]
-    fn start_from_idle_enters_focusing_and_stamps_start() {
+    fn started() -> SessionState {
+        // Idle -> Preparing -> Focusing at t=0.
         let mut s = SessionState::idle();
-        s.start("Ship slice".into(), String::new(), 1500, 1_000)
-            .unwrap();
+        s.start("Ship slice".into(), String::new(), 1500).unwrap();
+        s.begin(0).unwrap();
+        s
+    }
+
+    #[test]
+    fn start_from_idle_enters_preparing_without_starting_the_timer() {
+        let mut s = SessionState::idle();
+        s.start("Ship slice".into(), String::new(), 1500).unwrap();
+        assert_eq!(s.phase, Phase::Preparing);
+        assert_eq!(s.started_at_ms, None);
+        assert_eq!(s.remaining_secs(999_000), 1500); // full duration while preparing
+    }
+
+    #[test]
+    fn begin_moves_preparing_to_focusing_and_stamps_start() {
+        let mut s = SessionState::idle();
+        s.start("a".into(), String::new(), 1500).unwrap();
+        s.begin(1_000).unwrap();
         assert_eq!(s.phase, Phase::Focusing);
         assert_eq!(s.started_at_ms, Some(1_000));
-        assert_eq!(s.remaining_secs(1_000), 1500);
         assert_eq!(s.remaining_secs(61_000), 1440); // 60s elapsed
     }
 
     #[test]
-    fn start_rejected_unless_idle_or_complete() {
+    fn begin_rejected_unless_preparing() {
         let mut s = SessionState::idle();
-        s.start("a".into(), String::new(), 1500, 0).unwrap();
+        assert!(matches!(s.begin(0), Err(SessionError::InvalidTransition)));
+    }
+
+    #[test]
+    fn cancel_returns_preparing_to_idle() {
+        let mut s = SessionState::idle();
+        s.start("a".into(), String::new(), 1500).unwrap();
+        s.cancel().unwrap();
+        assert_eq!(s.phase, Phase::Idle);
+        assert_eq!(s.mission_title, "");
+    }
+
+    #[test]
+    fn cancel_rejected_unless_preparing() {
+        let mut s = started();
+        assert!(matches!(s.cancel(), Err(SessionError::InvalidTransition)));
+    }
+
+    #[test]
+    fn start_rejected_from_focusing() {
+        let mut s = started();
         assert!(matches!(
-            s.start("b".into(), String::new(), 1500, 5),
+            s.start("b".into(), String::new(), 1500),
             Err(SessionError::InvalidTransition)
         ));
     }
 
     #[test]
+    fn start_allowed_again_after_complete_or_abandon() {
+        let mut s = started();
+        s.complete().unwrap();
+        assert!(s.start("next".into(), String::new(), 900).is_ok());
+        let mut s2 = started();
+        s2.abandon().unwrap();
+        assert!(s2.start("next".into(), String::new(), 900).is_ok());
+    }
+
+    #[test]
     fn pause_then_resume_excludes_paused_time_from_elapsed() {
-        let mut s = SessionState::idle();
-        s.start("a".into(), String::new(), 1500, 0).unwrap();
-        s.pause(60_000).unwrap(); // 60s focused
+        let mut s = started();
+        s.pause(60_000).unwrap();
         assert_eq!(s.phase, Phase::Paused);
-        s.resume(120_000).unwrap(); // paused 60s
+        s.resume(120_000).unwrap();
         assert_eq!(s.total_paused_ms, 60_000);
         // 180s wall - 60s paused = 120s focused -> 1500 - 120 = 1380
         assert_eq!(s.remaining_secs(180_000), 1380);
@@ -178,21 +258,55 @@ mod tests {
     }
 
     #[test]
-    fn complete_is_idempotent() {
-        let mut s = SessionState::idle();
-        s.start("a".into(), String::new(), 1500, 0).unwrap();
-        s.complete(10_000).unwrap();
+    fn resume_rejected_when_not_paused() {
+        let mut s = started();
+        assert!(matches!(s.resume(1), Err(SessionError::InvalidTransition)));
+    }
+
+    #[test]
+    fn complete_from_focusing_or_paused() {
+        let mut s = started();
+        s.complete().unwrap();
         assert_eq!(s.phase, Phase::Complete);
-        assert!(matches!(
-            s.complete(11_000),
-            Err(SessionError::InvalidTransition)
-        ));
+
+        let mut p = started();
+        p.pause(1_000).unwrap();
+        p.complete().unwrap();
+        assert_eq!(p.phase, Phase::Complete);
+    }
+
+    #[test]
+    fn complete_is_idempotent() {
+        let mut s = started();
+        s.complete().unwrap();
+        assert!(matches!(s.complete(), Err(SessionError::InvalidTransition)));
+    }
+
+    #[test]
+    fn abandon_from_focusing_or_paused() {
+        let mut s = started();
+        s.abandon().unwrap();
+        assert_eq!(s.phase, Phase::Abandoned);
+
+        let mut p = started();
+        p.pause(1_000).unwrap();
+        p.abandon().unwrap();
+        assert_eq!(p.phase, Phase::Abandoned);
+    }
+
+    #[test]
+    fn abandon_rejected_when_idle_or_preparing() {
+        let mut s = SessionState::idle();
+        assert!(matches!(s.abandon(), Err(SessionError::InvalidTransition)));
+        s.start("a".into(), String::new(), 1500).unwrap();
+        assert!(matches!(s.abandon(), Err(SessionError::InvalidTransition)));
     }
 
     #[test]
     fn remaining_never_underflows_past_zero() {
         let mut s = SessionState::idle();
-        s.start("a".into(), String::new(), 60, 0).unwrap();
+        s.start("a".into(), String::new(), 60).unwrap();
+        s.begin(0).unwrap();
         assert_eq!(s.remaining_secs(999_000), 0);
     }
 }

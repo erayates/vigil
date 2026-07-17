@@ -27,6 +27,7 @@ interface FocusState {
   resumeSession: () => void;
   tick: (nowMs?: number) => void;
   completeSession: () => void;
+  abandonSession: () => void;
   resetSession: () => void;
 }
 
@@ -88,6 +89,10 @@ export const useFocusStore = create<FocusState>()(
             victoryCondition: state.victoryCondition,
             plannedDurationSecs: plannedDurationSeconds,
           });
+          // Cosmetic preparation delay stays in the UI; Rust owns the transition.
+          window.setTimeout(() => {
+            if (get().phase === 'preparing') void sessionBridge.begin();
+          }, 900);
           return;
         }
         set({
@@ -168,6 +173,16 @@ export const useFocusStore = create<FocusState>()(
           pauseStartedAtMs: null,
           history: [record, ...state.history].slice(0, 20),
         });
+      },
+      // ABANDON transition. The reason-capture flow + UI is VIGIL-008.
+      abandonSession: () => {
+        const state = get();
+        if (!['focusing', 'paused'].includes(state.phase)) return;
+        if (isTauriRuntime()) {
+          void sessionBridge.abandon();
+          return;
+        }
+        set({ phase: 'abandoned', pauseStartedAtMs: null });
       },
       resetSession: () => {
         const state = get();
