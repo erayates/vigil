@@ -1,3 +1,4 @@
+pub mod db;
 mod session;
 
 use session::{SessionSnapshot, SessionState};

@@ -122,7 +122,7 @@ items:
   - id: VIGIL-002
     phase: P0-D
     version: 0.0.4
-    status: ready
+    status: done
     priority: P0
     title: Implement SQLite migration spike
     asset_dependencies:
