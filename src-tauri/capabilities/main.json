@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-window",
+  "description": "Main dashboard window: least-privilege grants for session-event sync and title-bar dragging. All window controls and session mutations are Rust-side custom commands and need no capability.",
+  "windows": ["main"],
+  "permissions": ["core:event:default", "core:window:allow-start-dragging"]
+}

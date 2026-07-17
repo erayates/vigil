@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "companion-window",
+  "description": "Companion overlay window: least-privilege grants for session-event sync and drag-handle dragging. Show/hide and click-through are Rust-side custom commands and need no capability.",
+  "windows": ["companion"],
+  "permissions": ["core:event:default", "core:window:allow-start-dragging"]
+}

@@ -136,7 +136,7 @@ items:
   - id: VIGIL-003
     phase: P0-D
     version: 0.0.4
-    status: ready
+    status: done
     priority: P0
     title: Separate and review Tauri capabilities
     asset_dependencies:
