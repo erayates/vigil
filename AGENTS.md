@@ -15,6 +15,16 @@ When another instruction conflicts with this file, stop and ask the user which i
 8. the relevant phase file under `docs/roadmap/phases/`
 9. the task's linked specification and acceptance criteria
 
+## Required agent tooling
+
+These plugins are mandatory in this repository and are declared in `.claude/settings.json`. Every agent uses them continuously, not only when explicitly asked.
+
+- **superpowers** — process skills. Invoke the matching skill *before* the activity, then follow it exactly: `brainstorming` before any feature or plan work, `writing-plans` before a multi-step task, `test-driven-development` before writing implementation code, `systematic-debugging` before any bug fix, `verification-before-completion` before claiming work is done. Do not skip a skill's workflow.
+- **ponytail** — anti-over-engineering discipline, active on every response. Climb the ladder before writing code (does it need to exist → reuse what already lives here → standard library → native platform feature → already-installed dependency → one line → minimum code that works). Prefer deletion and the shortest working diff. Mark deliberate simplifications with a `ponytail:` comment.
+- **codegraph** — local, pre-indexed code knowledge graph (MCP server plus a `.codegraph/` index). Before running grep/find or reading files broadly to locate or understand code, query it first: the `codegraph_explore` MCP tool, or `codegraph explore "<symbols or question>"` in the shell, returns the relevant symbols' source plus the call paths between them in a single call. The index auto-syncs; rebuild manually with `codegraph sync` after large changes. If the `.codegraph/` directory is absent, skip codegraph (re-index with `codegraph init`).
+
+When a plugin's default workflow conflicts with a user instruction, the user instruction wins (see the conflict rule at the top of this file).
+
 ## Mandatory user-supplied artifact gate
 
 **This rule is non-negotiable.**
@@ -63,6 +73,7 @@ The generated files under `public/assets/` are `scaffold-only`. They may be used
 
 - Follow `docs/development/coding-standards/README.md` and its linked standards.
 - TypeScript must remain strict; boundary data is parsed, not asserted.
+- Source file names are kebab-case (`main-shell.tsx`, `use-focus-store.ts`); component identifiers stay PascalCase. See `docs/development/coding-standards/typescript-react.md`.
 - React render logic stays pure; Effects only synchronize with external systems.
 - Rust code passes `cargo fmt --check` and `cargo clippy -- -D warnings` before release.
 - Prefer semantic queries in UI tests; use test IDs only when no user-facing query is viable.

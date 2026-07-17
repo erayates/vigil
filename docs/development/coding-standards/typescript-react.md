@@ -27,7 +27,8 @@
 
 - Prefer semantic HTML before generic `div` elements.
 - Every interactive control uses a real `button`, `input`, `select` or link.
-- Component names are PascalCase; hooks begin with `use`; events use `handle<Action>`.
+- Component identifiers are PascalCase; hooks begin with `use`; events use `handle<Action>`.
+- Source file names are kebab-case: `main-shell.tsx`, `use-focus-store.ts`, `native-bridge.ts`, `main-shell.test.tsx`. The file name is kebab-case even though its exported identifier stays PascalCase (`main-shell.tsx` → `export function MainShell`). This applies to every `.ts`/`.tsx` file, including hooks, utilities and tests; directory names are already kebab-case.
 - Keep domain decisions out of view components.
 - A component may compose features and entities but must not reach into another feature's internal module.
 - Avoid giant components. Extract when a section has its own behavior, tests or accessibility contract.

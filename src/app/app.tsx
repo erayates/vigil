@@ -1,5 +1,5 @@
-import { CompanionOverlay } from '@/widgets/companion-overlay/CompanionOverlay';
-import { MainShell } from '@/widgets/main-shell/MainShell';
+import { CompanionOverlay } from '@/widgets/companion-overlay/companion-overlay';
+import { MainShell } from '@/widgets/main-shell/main-shell';
 
 function currentView(): 'main' | 'companion' {
   return new URLSearchParams(window.location.search).get('window') === 'companion'

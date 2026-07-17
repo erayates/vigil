@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useFocusStore } from '@/features/focus-session/model/useFocusStore';
+import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 
 function compactDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);

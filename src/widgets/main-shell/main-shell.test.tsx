@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { useFocusStore } from '@/features/focus-session/model/useFocusStore';
-import { MainShell } from './MainShell';
+import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
+import { MainShell } from './main-shell';
 
 const initialState = {
   missionTitle: '',
@@ -45,5 +45,23 @@ describe('MainShell', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Deep Formation, 50 minutes' }));
 
     expect(screen.getByLabelText('3000 seconds remaining')).toHaveTextContent('50:00');
+  });
+
+  it('announces the session phase without a per-second live region', () => {
+    render(<MainShell />);
+
+    // The seconds-updating timer must not sit inside a live region.
+    expect(screen.getByText('25:00').closest('[aria-live]')).toBeNull();
+    // A dedicated status region carries phase changes instead.
+    expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  it('names the target version on disabled roadmap controls', () => {
+    render(<MainShell />);
+
+    for (const name of [/Short Break.*v0\.2\.0/i, /Settings.*v0\.2\.0/i, /Skip.*v0\.2\.0/i]) {
+      const control = screen.getByRole('button', { name });
+      expect(control).toBeDisabled();
+    }
   });
 });

@@ -1,5 +1,5 @@
-import { useFocusStore } from '@/features/focus-session/model/useFocusStore';
-import { PixelCompanion } from '@/widgets/pixel-companion/PixelCompanion';
+import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
+import { PixelCompanion } from '@/widgets/pixel-companion/pixel-companion';
 import '@/widgets/pixel-companion/pixel-companion.css';
 
 const messageByPhase = {

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { formatDuration } from '@/entities/focus-session/lib/time';
-import { useFocusStore } from '@/features/focus-session/model/useFocusStore';
-import { nativeBridge } from '@/shared/lib/nativeBridge';
+import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
+import { nativeBridge } from '@/shared/lib/native-bridge';
 
 function phaseCopy(phase: ReturnType<typeof useFocusStore.getState>['phase']): string {
   switch (phase) {
@@ -78,7 +78,7 @@ export function FocusChamber() {
         <span aria-hidden="true">◆</span>
       </header>
 
-      <div className="laurel-timer" aria-live="polite">
+      <div className="laurel-timer">
         <span className="laurel laurel--left" aria-hidden="true">
           ❧
         </span>
@@ -93,7 +93,9 @@ export function FocusChamber() {
       <div className="timer-rule" aria-hidden="true">
         <span />
       </div>
-      <p className="focus-motto">{phaseCopy(phase)}</p>
+      <p className="focus-motto" role="status">
+        {phaseCopy(phase)}
+      </p>
       <p className="active-order-label">{missionTitle || 'Awaiting a campaign order'}</p>
 
       <div className="focus-progress" aria-label={`${Math.round(elapsedPercent)} percent elapsed`}>
@@ -138,6 +140,7 @@ export function FocusChamber() {
           className="control-button control-button--skip"
           type="button"
           disabled
+          aria-label="Skip — available in v0.2.0"
           title="Break skipping is introduced with the Doctrine flow in v0.2.0"
         >
           <span className="control-icon" aria-hidden="true">

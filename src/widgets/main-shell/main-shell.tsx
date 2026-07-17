@@ -1,8 +1,8 @@
-import { nativeBridge } from '@/shared/lib/nativeBridge';
-import { CampaignBoard } from '@/widgets/campaign-board/CampaignBoard';
-import { CampaignSummary } from '@/widgets/campaign-summary/CampaignSummary';
-import { CompanionStage } from '@/widgets/companion-stage/CompanionStage';
-import { FocusChamber } from '@/widgets/focus-chamber/FocusChamber';
+import { nativeBridge } from '@/shared/lib/native-bridge';
+import { CampaignBoard } from '@/widgets/campaign-board/campaign-board';
+import { CampaignSummary } from '@/widgets/campaign-summary/campaign-summary';
+import { CompanionStage } from '@/widgets/companion-stage/companion-stage';
+import { FocusChamber } from '@/widgets/focus-chamber/focus-chamber';
 import './main-shell.css';
 
 export function MainShell() {
@@ -32,6 +32,7 @@ export function MainShell() {
             className="session-tab"
             type="button"
             disabled
+            aria-label="Short Break — available in v0.2.0"
             title="Short break arrives in v0.2.0"
           >
             <span aria-hidden="true">☕</span>
@@ -41,6 +42,7 @@ export function MainShell() {
             className="session-tab"
             type="button"
             disabled
+            aria-label="Long Break — available in v0.2.0"
             title="Long break arrives in v0.2.0"
           >
             <span aria-hidden="true">⌂</span>
@@ -53,7 +55,7 @@ export function MainShell() {
             type="button"
             disabled
             title="Statistics screen is scheduled for v0.2.0"
-            aria-label="Statistics"
+            aria-label="Statistics — available in v0.2.0"
           >
             ▥
           </button>
@@ -61,7 +63,7 @@ export function MainShell() {
             type="button"
             disabled
             title="Settings screen is scheduled for v0.2.0"
-            aria-label="Settings"
+            aria-label="Settings — available in v0.2.0"
           >
             ⚙
           </button>

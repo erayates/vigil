@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { focusModes } from '@/entities/focus-session/model/modes';
-import { useFocusStore } from '@/features/focus-session/model/useFocusStore';
+import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 
 const queuedOrders = [
   { title: 'Review design mockups', priority: 'MEDIUM' },
@@ -143,7 +143,12 @@ export function CampaignBoard() {
       )}
 
       <footer className="campaign-board-footer">
-        <button type="button" disabled title="Task queue editing is planned for v0.2.0">
+        <button
+          type="button"
+          disabled
+          aria-label="Add task — available in v0.2.0"
+          title="Task queue editing is planned for v0.2.0"
+        >
           <span aria-hidden="true">＋</span> Add task
         </button>
         <strong>{1 + queuedOrders.length} tasks</strong>

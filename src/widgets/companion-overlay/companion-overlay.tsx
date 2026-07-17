@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { formatDuration } from '@/entities/focus-session/lib/time';
-import { useFocusStore } from '@/features/focus-session/model/useFocusStore';
-import { nativeBridge } from '@/shared/lib/nativeBridge';
-import { PixelCompanion } from '@/widgets/pixel-companion/PixelCompanion';
+import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
+import { nativeBridge } from '@/shared/lib/native-bridge';
+import { PixelCompanion } from '@/widgets/pixel-companion/pixel-companion';
 import '@/widgets/pixel-companion/pixel-companion.css';
 import './companion-overlay.css';
 
