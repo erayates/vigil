@@ -1,6 +1,6 @@
 schema_version: 1
 project: VIGIL
-updated_at: 2026-07-17
+updated_at: 2026-07-18
 rules:
   production_requires_status: approved
   exact_fidelity_assets_are_immutable: true
@@ -111,6 +111,14 @@ assets:
       - identical palette across states
       - nearest-neighbour safe
       - no baked background
+    waiver:
+      decided_by: user
+      decided_at: 2026-07-18
+      terms: >-
+        Deferred to v0.1.0 art-lock. SCAFFOLD-COMP-001 may be used through v0.1.0
+        vertical-slice development and testing (VIGIL-006, VIGIL-011). Production
+        art must be supplied and approved before the v0.1.0 release; scaffold
+        screenshots are not production baselines.
 
   - id: PROD-UI-001
     name: Production Roman pixel UI kit
@@ -137,6 +145,14 @@ assets:
       - no functional text baked into assets
       - corners must preserve shape under 9-slice scaling
       - transparent backgrounds where applicable
+    waiver:
+      decided_by: user
+      decided_at: 2026-07-18
+      terms: >-
+        Deferred to v0.1.0 art-lock. SCAFFOLD-UI-001 may be used through v0.1.0
+        vertical-slice development and testing (VIGIL-011). Production art must be
+        supplied and approved before the v0.1.0 release; scaffold screenshots are
+        not production baselines.
 
   - id: PROD-AUDIO-001
     name: Focus ritual sound set

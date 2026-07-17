@@ -80,7 +80,7 @@ items:
   - id: VIGIL-ASSET-002
     phase: P0-C
     version: 0.0.3
-    status: blocked-user
+    status: deferred
     priority: P1
     title: Request production UI kit
     asset_dependencies:
@@ -94,7 +94,7 @@ items:
   - id: VIGIL-ASSET-003
     phase: P0-C
     version: 0.0.3
-    status: blocked-user
+    status: deferred
     priority: P1
     title: Request production legionary sprite set
     asset_dependencies:
