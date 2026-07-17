@@ -12,3 +12,11 @@
 | `CampaignProgressed`         |      0.2.0 | Attribute accepted focus duration             |
 | `DisciplinaAwarded`          |      0.3.0 | Derive progression from session rules         |
 | `CompanionPreferenceChanged` |      0.2.0 | Persist window/avatar preference              |
+
+## Cross-window transport
+
+Not a domain event — the Tauri IPC broadcast that keeps both windows in sync.
+
+| Event               | Introduced | Purpose                                                                                             |
+| ------------------- | ---------: | --------------------------------------------------------------------------------------------------- |
+| `session://changed` |      0.0.4 | Rust core broadcasts the authoritative `SessionSnapshot` to every window after each session command (VIGIL-001, ADR-007). |
