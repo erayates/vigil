@@ -1,7 +1,7 @@
 project: VIGIL
 current_version: 0.0.2
 next_release: 0.0.3
-updated_at: 2026-07-17
+updated_at: 2026-07-18
 
 items:
   - id: VIGIL-UI-001
@@ -108,7 +108,7 @@ items:
   - id: VIGIL-001
     phase: P0-D
     version: 0.0.4
-    status: ready
+    status: done
     priority: P0
     title: Choose authoritative cross-window session ownership
     asset_dependencies:
