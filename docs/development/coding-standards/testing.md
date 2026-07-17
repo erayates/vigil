@@ -26,6 +26,8 @@ mission → start → pause/resume → completion → persistence → restart re
 
 A pixel-art UI requires deterministic screenshots at agreed viewport/DPI presets. Disable animation, freeze time, seed data and compare stable regions. Do not approve broad thresholds that hide frame or alignment regressions.
 
+Dashboard baselines live under `tests/e2e/__screenshots__/scaffold/` (see the README there for the update procedure). They are captured with scaffold art at the 1600×900 and 1280×800 presets on a single platform, and are regenerated under a `production/` sibling once `PROD-UI-001` / `PROD-COMP-001` are approved.
+
 ## Naming
 
 ```text
