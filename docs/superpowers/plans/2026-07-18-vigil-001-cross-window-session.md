@@ -66,7 +66,7 @@ mod tests {
         assert_eq!(s.phase, Phase::Paused);
         s.resume(120_000).unwrap();          // paused 60s
         assert_eq!(s.total_paused_ms, 60_000);
-        assert_eq!(s.remaining_secs(180_000), 1440); // 180s wall - 60s paused = 120s focused
+        assert_eq!(s.remaining_secs(180_000), 1380); // 180s wall - 60s paused = 120s focused -> 1500-120
     }
 
     #[test]
