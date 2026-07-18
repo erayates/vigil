@@ -442,7 +442,7 @@ items:
   - id: VIGIL-025
     phase: P3
     version: 0.3.0
-    status: planned
+    status: done
     priority: P1
     title: Add Formation Integrity (non-punitive continuity)
     asset_dependencies:

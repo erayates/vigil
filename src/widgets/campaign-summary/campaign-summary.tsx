@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { calculateDisciplina } from '@/entities/focus-session/lib/disciplina';
+import { calculateFormationIntegrity } from '@/entities/focus-session/lib/formation';
 import { calculateRank } from '@/entities/focus-session/lib/rank';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 
@@ -56,6 +57,7 @@ export function CampaignSummary() {
   const maxDaySeconds = Math.max(1, ...weekDays.map((day) => day.seconds));
   const disciplina = useMemo(() => calculateDisciplina(history), [history]);
   const rank = useMemo(() => calculateRank(disciplina.points), [disciplina.points]);
+  const formation = useMemo(() => calculateFormationIntegrity(history), [history]);
 
   const target = 6;
   const progress = Math.min(100, (todaySessions / target) * 100);
@@ -114,7 +116,8 @@ export function CampaignSummary() {
           <span aria-hidden="true">▤</span>
           <h3>This Week</h3>
           <b>
-            {compactDuration(weekSeconds)} · {weekCompleted} watches
+            {compactDuration(weekSeconds)} · {weekCompleted} watches · {formation.percent}%
+            formation
           </b>
         </header>
         <div className="weekly-bars">

@@ -28,6 +28,21 @@ which is capped (like the "Total Time" and weekly metrics). For long-term
 accuracy a future task replaces these all-time metrics with a Rust aggregate over
 every record; tracked as shared debt with the weekly-summary cap.
 
+## Formation Integrity
+
+A "streak without shame" (VIGIL-025): the share of the **last seven days** that had
+at least one completed watch.
+
+```text
+activeDays = distinct days in the last 7 with a completed watch
+percent    = round(activeDays / 7 * 100)
+```
+
+- A missed day lowers it by ~1/7 — a **gentle degrade**, never a reset to zero on a
+  single miss — and it recovers as active days accumulate.
+- It is only a recent-consistency indicator: it never touches Disciplina, rank or
+  any accumulated work.
+
 ## Downstream
 
 Rank (VIGIL-027) and camp growth (VIGIL-029) derive from Disciplina; they must
