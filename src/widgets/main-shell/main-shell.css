@@ -606,6 +606,23 @@
   background: #51405d;
 }
 
+.abandon-watch {
+  justify-self: center;
+  margin-top: 8px;
+  padding: 4px 16px;
+  border: 2px solid #5a2622;
+  background: transparent;
+  color: #c88a80;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.abandon-watch:hover {
+  color: #e8b0a6;
+  border-color: #8f2a20;
+}
+
 .control-icon {
   font-family: Consolas, monospace;
   font-size: 1.65rem;

@@ -206,7 +206,7 @@ items:
   - id: VIGIL-008
     phase: P1
     version: 0.1.0
-    status: planned
+    status: done
     priority: P1
     title: Implement abandon flow
     asset_dependencies:

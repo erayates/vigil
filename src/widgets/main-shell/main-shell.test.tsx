@@ -64,4 +64,14 @@ describe('MainShell', () => {
       expect(control).toBeDisabled();
     }
   });
+
+  it('offers an abandon control during a session that grants no completed record', () => {
+    useFocusStore.setState({ phase: 'focusing', missionTitle: 'Ship it', startedAtMs: null });
+    render(<MainShell />);
+
+    fireEvent.click(screen.getByRole('button', { name: /abandon watch/i }));
+
+    expect(useFocusStore.getState().phase).toBe('abandoned');
+    expect(useFocusStore.getState().history).toHaveLength(0);
+  });
 });

@@ -28,6 +28,7 @@ export function FocusChamber() {
     pauseSession,
     resumeSession,
     resetSession,
+    abandonSession,
     tick,
   } = useFocusStore();
 
@@ -128,7 +129,7 @@ export function FocusChamber() {
         <button
           className="control-button control-button--reset"
           type="button"
-          disabled={!['idle', 'complete'].includes(phase)}
+          disabled={!['idle', 'complete', 'abandoned'].includes(phase)}
           onClick={resetSession}
         >
           <span className="control-icon" aria-hidden="true">
@@ -149,6 +150,12 @@ export function FocusChamber() {
           <strong>Skip</strong>
         </button>
       </div>
+
+      {(phase === 'focusing' || phase === 'paused') && (
+        <button className="abandon-watch" type="button" onClick={abandonSession}>
+          Abandon watch
+        </button>
+      )}
     </section>
   );
 }
