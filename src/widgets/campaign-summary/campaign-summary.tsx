@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { calculateDisciplina } from '@/entities/focus-session/lib/disciplina';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 
 function compactDuration(totalSeconds: number): string {
@@ -52,6 +53,7 @@ export function CampaignSummary() {
     };
   }, [history]);
   const maxDaySeconds = Math.max(1, ...weekDays.map((day) => day.seconds));
+  const disciplina = useMemo(() => calculateDisciplina(history), [history]);
 
   const target = 6;
   const progress = Math.min(100, (todaySessions / target) * 100);
@@ -87,9 +89,9 @@ export function CampaignSummary() {
         </article>
         <article>
           <span aria-hidden="true">♨</span>
-          <small>Formation</small>
-          <strong>—</strong>
-          <em>v0.3.0</em>
+          <small>Disciplina</small>
+          <strong>{disciplina.points}</strong>
+          <em>Points</em>
         </article>
         <article>
           <span aria-hidden="true">⌛</span>
