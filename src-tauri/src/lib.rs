@@ -7,6 +7,8 @@ use rusqlite::Connection;
 use session::{Phase, SessionSnapshot, SessionState};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::menu::{CheckMenuItem, Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Emitter, Manager};
 use uuid::Uuid;
 
@@ -452,6 +454,106 @@ fn companion_prefs_set(
     Ok(prefs)
 }
 
+/// Build the system tray: show/hide the companion (disabling click-through on
+/// show, which closes VIGIL-009's deferred recovery path), open the main window,
+/// toggle close-to-tray, and quit. Backend-created, so no extra capability.
+fn setup_tray(app: &tauri::AppHandle, close_to_tray_enabled: bool) -> tauri::Result<()> {
+    let show_companion_i = MenuItem::with_id(
+        app,
+        "tray_show_companion",
+        "Show companion",
+        true,
+        None::<&str>,
+    )?;
+    let hide_companion_i = MenuItem::with_id(
+        app,
+        "tray_hide_companion",
+        "Hide companion",
+        true,
+        None::<&str>,
+    )?;
+    let open_main_i = MenuItem::with_id(app, "tray_open_main", "Open VIGIL", true, None::<&str>)?;
+    let close_to_tray_i = CheckMenuItem::with_id(
+        app,
+        "tray_close_to_tray",
+        "Close to tray",
+        true,
+        close_to_tray_enabled,
+        None::<&str>,
+    )?;
+    let quit_i = MenuItem::with_id(app, "tray_quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(
+        app,
+        &[
+            &show_companion_i,
+            &hide_companion_i,
+            &open_main_i,
+            &close_to_tray_i,
+            &quit_i,
+        ],
+    )?;
+
+    let Some(icon) = app.default_window_icon().cloned() else {
+        // Without an icon the tray can't render; the main-window "Recall companion"
+        // control (VIGIL-009) stays as the recovery path.
+        eprintln!("[vigil] no window icon available; skipping tray");
+        return Ok(());
+    };
+
+    TrayIconBuilder::with_id("vigil-tray")
+        .icon(icon)
+        .tooltip("VIGIL")
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(move |app, event| match event.id.as_ref() {
+            "tray_show_companion" => {
+                if let Some(window) = app.get_webview_window("companion") {
+                    let _ = window.show();
+                    let _ = window.set_ignore_cursor_events(false);
+                }
+            }
+            "tray_hide_companion" => {
+                if let Some(window) = app.get_webview_window("companion") {
+                    let _ = window.hide();
+                }
+            }
+            "tray_open_main" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+            "tray_close_to_tray" => {
+                let state = app.state::<Mutex<Connection>>();
+                let conn = state.lock().unwrap();
+                let next = !repository::close_to_tray(&conn).unwrap_or(false);
+                let _ = repository::set_setting(
+                    &conn,
+                    "close_to_tray",
+                    if next { "true" } else { "false" },
+                );
+                let _ = close_to_tray_i.set_checked(next);
+            }
+            "tray_quit" => app.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                if let Some(window) = tray.app_handle().get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        })
+        .build(app)?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -466,6 +568,7 @@ pub fn run() {
             if let Some(recovered) = repository::active_session(&connection)? {
                 *app.state::<Mutex<SessionState>>().lock().unwrap() = recovered;
             }
+            let close_to_tray_enabled = repository::close_to_tray(&connection).unwrap_or(false);
             app.manage(Mutex::new(connection));
 
             // Keep the companion reachable if a monitor was unplugged since last run.
@@ -501,7 +604,26 @@ pub fn run() {
                 }
             }
 
+            setup_tray(app.handle(), close_to_tray_enabled)?;
+
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Closing the main window hides it to the tray when the preference is on;
+            // otherwise the default close (quit) proceeds.
+            if window.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    let keep = {
+                        let state = window.app_handle().state::<Mutex<Connection>>();
+                        let conn = state.lock().unwrap();
+                        repository::close_to_tray(&conn).unwrap_or(false)
+                    };
+                    if keep {
+                        api.prevent_close();
+                        let _ = window.hide();
+                    }
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             show_companion,

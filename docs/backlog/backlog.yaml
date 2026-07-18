@@ -330,7 +330,7 @@ items:
   - id: VIGIL-017
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P1
     title: Add system tray behavior
     asset_dependencies:

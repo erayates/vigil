@@ -408,6 +408,14 @@ pub fn companion_prefs_set(
     companion_prefs_get(conn)
 }
 
+/// Whether closing the main window should hide it to the tray instead of quitting.
+/// Off by default (closing quits), opt-in from the tray menu.
+pub fn close_to_tray(conn: &Connection) -> Result<bool, String> {
+    Ok(get_setting(conn, "close_to_tray")?
+        .map(|value| value == "true")
+        .unwrap_or(false))
+}
+
 // ----- Local data export / import (VIGIL-022) -------------------------------
 
 pub const EXPORT_VERSION: i64 = 1;
@@ -1027,5 +1035,15 @@ mod tests {
             companion_prefs_set(&conn, "up", 1.0, 1.0).unwrap().side,
             "right"
         );
+    }
+
+    #[test]
+    fn close_to_tray_defaults_off_and_toggles() {
+        let conn = db::open(":memory:").unwrap();
+        assert!(!close_to_tray(&conn).unwrap());
+        set_setting(&conn, "close_to_tray", "true").unwrap();
+        assert!(close_to_tray(&conn).unwrap());
+        set_setting(&conn, "close_to_tray", "false").unwrap();
+        assert!(!close_to_tray(&conn).unwrap());
     }
 }
