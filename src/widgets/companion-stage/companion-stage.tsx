@@ -1,3 +1,5 @@
+import { calculateDisciplina } from '@/entities/focus-session/lib/disciplina';
+import { calculateRank } from '@/entities/focus-session/lib/rank';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { nativeBridge } from '@/shared/lib/native-bridge';
 import { PixelCompanion } from '@/widgets/pixel-companion/pixel-companion';
@@ -16,6 +18,8 @@ const messageByPhase = {
 
 export function CompanionStage() {
   const phase = useFocusStore((state) => state.phase);
+  const history = useFocusStore((state) => state.history);
+  const rank = calculateRank(calculateDisciplina(history).points);
 
   return (
     <aside
@@ -25,9 +29,9 @@ export function CompanionStage() {
       <div className="companion-message" aria-live="polite">
         {messageByPhase[phase]}
       </div>
-      <div className="standard-banner" aria-hidden="true">
+      <div className="standard-banner" aria-hidden="true" title={`Rank: ${rank.name}`}>
         <span>SPQR</span>
-        <strong>V</strong>
+        <strong>{rank.romanNumeral}</strong>
       </div>
       <div className="companion-figure">
         <PixelCompanion phase={phase} size="large" />

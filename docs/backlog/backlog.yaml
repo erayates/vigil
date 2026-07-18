@@ -470,7 +470,7 @@ items:
   - id: VIGIL-027
     phase: P3
     version: 0.3.0
-    status: planned
+    status: done
     priority: P1
     title: Add rank progression
     asset_dependencies:
