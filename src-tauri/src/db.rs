@@ -3,8 +3,9 @@ use rusqlite_migration::{Migrations, M};
 
 /// Numbered, forward-only migrations keyed on `PRAGMA user_version`.
 pub fn migrations() -> Migrations<'static> {
-    Migrations::new(vec![M::up(
-        "CREATE TABLE missions (
+    Migrations::new(vec![
+        M::up(
+            "CREATE TABLE missions (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
             victory_condition TEXT,
@@ -30,7 +31,12 @@ pub fn migrations() -> Migrations<'static> {
             ended_at TEXT,
             FOREIGN KEY (session_id) REFERENCES focus_sessions(id)
         );",
-    )])
+        ),
+        M::up(
+            "ALTER TABLE focus_sessions ADD COLUMN total_paused_ms INTEGER NOT NULL DEFAULT 0;
+             ALTER TABLE focus_sessions ADD COLUMN pause_started_at_ms INTEGER;",
+        ),
+    ])
 }
 
 /// Open (creating if needed) the database at `path`, enable foreign keys, and run

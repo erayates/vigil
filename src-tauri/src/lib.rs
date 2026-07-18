@@ -250,6 +250,10 @@ pub fn run() {
             path.push("vigil.db");
             let db_path = path.to_str().ok_or("database path is not valid UTF-8")?;
             let connection = db::open(db_path)?;
+            // Recover an active session left by a previous run (forced quit / crash).
+            if let Some(recovered) = repository::active_session(&connection)? {
+                *app.state::<Mutex<SessionState>>().lock().unwrap() = recovered;
+            }
             app.manage(Mutex::new(connection));
             Ok(())
         })

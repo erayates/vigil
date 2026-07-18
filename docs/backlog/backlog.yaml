@@ -193,7 +193,7 @@ items:
   - id: VIGIL-007
     phase: P1
     version: 0.1.0
-    status: planned
+    status: done
     priority: P0
     title: Recover session after restart
     asset_dependencies:

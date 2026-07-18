@@ -1,5 +1,5 @@
 use crate::session::{Phase, SessionState};
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 
 pub struct StoredSession {
     pub id: String,
@@ -8,6 +8,17 @@ pub struct StoredSession {
     pub planned_duration_seconds: i64,
     pub focused_duration_seconds: i64,
     pub outcome: Option<String>,
+}
+
+fn phase_from_str(value: &str) -> Phase {
+    match value {
+        "preparing" => Phase::Preparing,
+        "focusing" => Phase::Focusing,
+        "paused" => Phase::Paused,
+        "complete" => Phase::Complete,
+        "abandoned" => Phase::Abandoned,
+        _ => Phase::Idle,
+    }
 }
 
 /// Mirror the authoritative session into SQLite (upsert). A no-op until the timer
@@ -57,13 +68,15 @@ pub fn record_session(
     conn.execute(
         "INSERT INTO focus_sessions
             (id, mission_id, state, planned_duration_seconds, focused_duration_seconds,
-             started_at, completed_at, outcome)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+             started_at, completed_at, outcome, total_paused_ms, pause_started_at_ms)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
          ON CONFLICT(id) DO UPDATE SET
              state = excluded.state,
              focused_duration_seconds = excluded.focused_duration_seconds,
              completed_at = excluded.completed_at,
-             outcome = excluded.outcome",
+             outcome = excluded.outcome,
+             total_paused_ms = excluded.total_paused_ms,
+             pause_started_at_ms = excluded.pause_started_at_ms",
         params![
             id,
             mission_id,
@@ -73,6 +86,8 @@ pub fn record_session(
             started.to_string(),
             completed_at,
             outcome,
+            state.total_paused_ms,
+            state.pause_started_at_ms,
         ],
     )
     .map_err(|error| error.to_string())?;
@@ -87,6 +102,36 @@ pub fn active_session_count(conn: &Connection) -> Result<i64, String> {
         [],
         |row| row.get(0),
     )
+    .map_err(|error| error.to_string())
+}
+
+/// Reconstruct the single active (focusing/paused) session for restart recovery.
+pub fn active_session(conn: &Connection) -> Result<Option<SessionState>, String> {
+    conn.query_row(
+        "SELECT s.id, s.mission_id, m.title, m.victory_condition, s.state,
+                s.planned_duration_seconds, s.started_at, s.total_paused_ms, s.pause_started_at_ms
+         FROM focus_sessions s
+         JOIN missions m ON m.id = s.mission_id
+         WHERE s.state IN ('focusing', 'paused')
+         LIMIT 1",
+        [],
+        |row| {
+            let state_str: String = row.get(4)?;
+            let started_str: String = row.get(6)?;
+            Ok(SessionState {
+                id: Some(row.get(0)?),
+                mission_id: Some(row.get(1)?),
+                phase: phase_from_str(&state_str),
+                mission_title: row.get(2)?,
+                victory_condition: row.get(3)?,
+                planned_duration_secs: row.get::<_, i64>(5)? as u64,
+                started_at_ms: started_str.parse::<i64>().ok(),
+                total_paused_ms: row.get(7)?,
+                pause_started_at_ms: row.get(8)?,
+            })
+        },
+    )
+    .optional()
     .map_err(|error| error.to_string())
 }
 
@@ -136,6 +181,12 @@ mod tests {
         s
     }
 
+    fn paused_session() -> SessionState {
+        let mut s = focusing_session();
+        s.pause(61_000).unwrap(); // 60s focused, then paused
+        s
+    }
+
     #[test]
     fn preparing_session_is_not_persisted() {
         let conn = db::open(":memory:").unwrap();
@@ -164,6 +215,7 @@ mod tests {
         s.complete().unwrap();
         record_session(&conn, &s, 60, 61_000).unwrap();
         assert_eq!(active_session_count(&conn).unwrap(), 0);
+        assert!(active_session(&conn).unwrap().is_none());
         let recent = list_recent(&conn, 10).unwrap();
         assert_eq!(recent.len(), 1);
         assert_eq!(recent[0].mission_title, "Ship slice");
@@ -186,5 +238,47 @@ mod tests {
         assert_eq!(recent.len(), 1);
         assert_eq!(recent[0].id, "s1");
         assert_eq!(recent[0].focused_duration_seconds, 120);
+    }
+
+    #[test]
+    fn no_active_session_in_an_empty_database() {
+        let conn = db::open(":memory:").unwrap();
+        assert!(active_session(&conn).unwrap().is_none());
+    }
+
+    #[test]
+    fn active_paused_session_recovers_across_reopen_with_frozen_time() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("vigil.db");
+        let path_str = path.to_str().unwrap();
+        {
+            let conn = db::open(path_str).unwrap();
+            record_session(&conn, &paused_session(), 60, 61_000).unwrap();
+        }
+        let conn = db::open(path_str).unwrap();
+        let recovered = active_session(&conn).unwrap().expect("an active session");
+        assert_eq!(recovered.phase, Phase::Paused);
+        assert_eq!(recovered.id.as_deref(), Some("s1"));
+        assert_eq!(recovered.started_at_ms, Some(1_000));
+        assert_eq!(recovered.pause_started_at_ms, Some(61_000));
+        // Paused time is frozen: 60s focused regardless of how long the app was down.
+        assert_eq!(recovered.remaining_secs(999_000_000), 1440);
+    }
+
+    #[test]
+    fn completing_a_recovered_session_does_not_duplicate_the_record() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("vigil.db");
+        let path_str = path.to_str().unwrap();
+        {
+            let conn = db::open(path_str).unwrap();
+            record_session(&conn, &focusing_session(), 60, 61_000).unwrap();
+        }
+        let conn = db::open(path_str).unwrap();
+        let mut recovered = active_session(&conn).unwrap().expect("an active session");
+        recovered.complete().unwrap();
+        record_session(&conn, &recovered, 60, 62_000).unwrap();
+        assert_eq!(list_recent(&conn, 10).unwrap().len(), 1); // one record, not two
+        assert!(active_session(&conn).unwrap().is_none());
     }
 }
