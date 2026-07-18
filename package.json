@@ -1,6 +1,6 @@
 {
   "name": "vigil-focus",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Roman-inspired pixel-art desktop focus companion built with Tauri, React and TypeScript.",
   "license": "UNLICENSED",
