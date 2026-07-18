@@ -1,0 +1,16 @@
+# Build output and generated files
+dist
+coverage
+playwright-report
+test-results
+blob-report
+src-tauri/target
+src-tauri/gen
+.codegraph
+
+# Screenshot baselines (binary)
+tests/e2e/__screenshots__
+
+# Tooling config managed by plugins / codegraph, not hand-formatted
+.claude/
+.mcp.json

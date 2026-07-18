@@ -17,6 +17,6 @@
 
 Not a domain event — the Tauri IPC broadcast that keeps both windows in sync.
 
-| Event               | Introduced | Purpose                                                                                             |
-| ------------------- | ---------: | --------------------------------------------------------------------------------------------------- |
+| Event               | Introduced | Purpose                                                                                                                   |
+| ------------------- | ---------: | ------------------------------------------------------------------------------------------------------------------------- |
 | `session://changed` |      0.0.4 | Rust core broadcasts the authoritative `SessionSnapshot` to every window after each session command (VIGIL-001, ADR-007). |

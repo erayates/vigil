@@ -27,10 +27,12 @@
 ### Task 1: Authoritative session state + pure transitions (Rust)
 
 **Files:**
+
 - Create: `src-tauri/src/session.rs`
 - Test: same file, `#[cfg(test)] mod tests`
 
 **Interfaces:**
+
 - Produces: `Phase` (`Idle|Focusing|Paused|Complete`), `SessionState`, `SessionSnapshot`, `SessionError`, and methods `SessionState::idle()`, `start(&mut self, mission, victory, planned_secs, now_ms) -> Result<(), SessionError>`, `pause(now_ms)`, `resume(now_ms)`, `complete(now_ms)`, `reset()`, `snapshot(&self) -> SessionSnapshot`, `remaining_secs(&self, now_ms) -> u64`.
 
 - [ ] **Step 1: Write failing tests**
@@ -197,9 +199,11 @@ impl SessionState {
 ### Task 2: Commands + event broadcast (Rust)
 
 **Files:**
+
 - Modify: `src-tauri/src/lib.rs`
 
 **Interfaces:**
+
 - Consumes: `session::{SessionState, SessionSnapshot}` from Task 1.
 - Produces IPC commands: `session_get() -> SessionSnapshot`, `session_start(missionTitle, victoryCondition, plannedDurationSecs) -> Result<SessionSnapshot, String>`, `session_pause/resume/complete/reset() -> Result<SessionSnapshot, String>`; event `session://changed` (payload = `SessionSnapshot`).
 
@@ -267,9 +271,11 @@ tauri::Builder::default()
 ### Task 3: Frontend session bridge (isTauri-guarded IPC)
 
 **Files:**
+
 - Create: `src/shared/lib/session-bridge.ts`
 
 **Interfaces:**
+
 - Consumes: the `session_*` commands and `session://changed` event from Task 2.
 - Produces: `SessionSnapshot` (Zod-parsed type), `isTauri()`, `getSession()`, `startSession(args)`, `pauseSession()`, `resumeSession()`, `completeSession()`, `resetSession()`, `subscribeSession(cb): Promise<UnlistenFn>`.
 
@@ -282,9 +288,12 @@ import { z } from 'zod';
 
 export const sessionSnapshotSchema = z.object({
   phase: z.enum(['idle', 'focusing', 'paused', 'complete']),
-  missionTitle: z.string(), victoryCondition: z.string(),
-  plannedDurationSecs: z.number(), startedAtMs: z.number().nullable(),
-  totalPausedMs: z.number(), pauseStartedAtMs: z.number().nullable(),
+  missionTitle: z.string(),
+  victoryCondition: z.string(),
+  plannedDurationSecs: z.number(),
+  startedAtMs: z.number().nullable(),
+  totalPausedMs: z.number(),
+  pauseStartedAtMs: z.number().nullable(),
   remainingSecs: z.number(),
 });
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;
@@ -294,7 +303,11 @@ export async function getSession(): Promise<SessionSnapshot | null> {
   if (!isTauri()) return null;
   return sessionSnapshotSchema.parse(await invoke('session_get'));
 }
-export async function startSession(a: { missionTitle: string; victoryCondition: string; plannedDurationSecs: number }) {
+export async function startSession(a: {
+  missionTitle: string;
+  victoryCondition: string;
+  plannedDurationSecs: number;
+}) {
   if (!isTauri()) return null;
   return sessionSnapshotSchema.parse(await invoke('session_start', a));
 }
@@ -312,10 +325,12 @@ export async function subscribeSession(cb: (s: SessionSnapshot) => void): Promis
 ### Task 4: Store dual-mode refactor
 
 **Files:**
+
 - Modify: `src/features/focus-session/model/use-focus-store.ts`
 - Test: `src/widgets/main-shell/main-shell.test.tsx` stays green (browser mode)
 
 **Interfaces:**
+
 - Consumes: `session-bridge` from Task 3.
 - Produces: `applySnapshot(snap)` action; `initSessionSync()` (idempotent; under Tauri calls `getSession()` then `subscribeSession(applySnapshot)`).
 
@@ -329,6 +344,7 @@ export async function subscribeSession(cb: (s: SessionSnapshot) => void): Promis
 ### Task 5: Companion renders from shared authority
 
 **Files:**
+
 - Modify: `src/widgets/companion-overlay/companion-overlay.tsx`
 
 - [ ] **Step 1:** Keep the display interval that recomputes remaining from `startedAtMs`, but confirm its `pause/resume/complete` handlers go through the store (which, under Tauri, routes to Rust). Remove any path where the companion mutates authoritative phase locally under Tauri. Under Tauri the companion is now a pure mirror + command sender.
@@ -339,6 +355,7 @@ export async function subscribeSession(cb: (s: SessionSnapshot) => void): Promis
 ### Task 6: Event catalog doc
 
 **Files:**
+
 - Modify: `docs/domain/event-catalog.md`
 
 - [ ] **Step 1:** Add `session://changed` (payload `SessionSnapshot`, emitted by Rust after every session command, consumed by both windows). **Step 2: Commit.**

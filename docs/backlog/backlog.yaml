@@ -245,7 +245,7 @@ items:
   - id: VIGIL-011
     phase: P1
     version: 0.1.0
-    status: planned
+    status: done
     priority: P1
     title: Add v0.1 end-to-end tests
     asset_dependencies:
