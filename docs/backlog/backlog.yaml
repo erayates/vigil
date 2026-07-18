@@ -424,3 +424,115 @@ items:
       - Seven-day run completes without data loss.
       - Preferences recover correctly across restarts.
       - No P0 defects remain.
+
+  - id: VIGIL-024
+    phase: P3
+    version: 0.3.0
+    status: planned
+    priority: P1
+    title: Define the Disciplina calculation policy
+    asset_dependencies:
+      - NONE
+    objective: Derive a non-punitive consistency measure only from accepted focus records.
+    acceptance:
+      - Disciplina is computed from completed sessions, never from UI clicks.
+      - A missed day never reduces accumulated Disciplina.
+      - The policy is documented and unit-tested.
+
+  - id: VIGIL-025
+    phase: P3
+    version: 0.3.0
+    status: planned
+    priority: P1
+    title: Add Formation Integrity (non-punitive continuity)
+    asset_dependencies:
+      - NONE
+    objective: Replace destructive streak resets with a continuity that never erases work.
+    acceptance:
+      - A missed day never zeroes accumulated progress.
+      - Continuity degrades gently rather than resetting to zero.
+      - Behaviour is unit-tested.
+
+  - id: VIGIL-026
+    phase: P3
+    version: 0.3.0
+    status: planned
+    priority: P2
+    title: Add Recovery Days
+    asset_dependencies:
+      - NONE
+    objective: Let planned rest count as intentional recovery, not failure.
+    acceptance:
+      - A Recovery Day preserves continuity.
+      - Recovery Days are user-marked and never forced.
+      - They persist and recover across restart.
+
+  - id: VIGIL-027
+    phase: P3
+    version: 0.3.0
+    status: planned
+    priority: P1
+    title: Add rank progression
+    asset_dependencies:
+      - NONE
+    objective: Derive a rank from accumulated Disciplina without reward-first framing.
+    acceptance:
+      - Rank derives only from accepted records.
+      - Rank never decreases because of a missed day.
+      - The mission stays visually dominant over rank.
+
+  - id: VIGIL-028
+    phase: P3
+    version: 0.3.0
+    status: planned
+    priority: P2
+    title: Add progress explanation and audit trail
+    asset_dependencies:
+      - NONE
+    objective: Explain transparently how progression was derived from records.
+    acceptance:
+      - Every progression change traces to specific accepted records.
+      - The explanation is visible to the user.
+      - No hidden or random progression exists.
+
+  - id: VIGIL-029
+    phase: P3
+    version: 0.3.0
+    status: planned
+    priority: P2
+    title: Add camp growth visualization
+    asset_dependencies:
+      - PROD-COMP-001
+    objective: Visualize accumulated progress as a growing camp scene.
+    acceptance:
+      - Camp state derives from accepted records.
+      - Growth never shrinks on a missed day.
+      - Production camp art is supplied or deferral is explicitly authorized.
+
+  - id: VIGIL-030
+    phase: P3
+    version: 0.3.0
+    status: planned
+    priority: P2
+    title: Add cosmetic equipment unlocks
+    asset_dependencies:
+      - PROD-COMP-001
+    objective: Unlock cosmetic companion equipment from progression — never paid or random.
+    acceptance:
+      - No loot boxes, random or paid rewards.
+      - Unlocks derive from accepted records.
+      - Production equipment art is supplied or deferral is explicitly authorized.
+
+  - id: VIGIL-031
+    phase: P3
+    version: 0.3.0
+    status: planned
+    priority: P1
+    title: Progression guardrail review
+    asset_dependencies:
+      - NONE
+    objective: Verify progression respects the non-punitive, mission-first guardrails.
+    acceptance:
+      - No loss-aversion timers or compulsion mechanics exist.
+      - Missed days never erase accumulated work.
+      - The mission remains visually dominant over progression.
