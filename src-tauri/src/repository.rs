@@ -1,6 +1,6 @@
 use crate::session::{Phase, SessionState};
 use rusqlite::{params, Connection, OptionalExtension};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub struct StoredSession {
     pub id: String,
@@ -354,6 +354,244 @@ pub fn doctrine_set(conn: &Connection, short: i64, long: i64) -> Result<Doctrine
     doctrine_get(conn)
 }
 
+// ----- Local data export / import (VIGIL-022) -------------------------------
+
+pub const EXPORT_VERSION: i64 = 1;
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CampaignRow {
+    pub id: String,
+    pub name: String,
+    pub status: String,
+    pub created_at: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MissionRow {
+    pub id: String,
+    pub title: String,
+    pub victory_condition: Option<String>,
+    pub status: String,
+    pub created_at: String,
+    pub completed_at: Option<String>,
+    pub campaign_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FocusSessionRow {
+    pub id: String,
+    pub mission_id: String,
+    pub state: String,
+    pub planned_duration_seconds: i64,
+    pub focused_duration_seconds: i64,
+    pub started_at: String,
+    pub completed_at: Option<String>,
+    pub outcome: Option<String>,
+    pub total_paused_ms: i64,
+    pub pause_started_at_ms: Option<i64>,
+    pub result: Option<String>,
+    pub blocker: Option<String>,
+    pub next_action: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingRow {
+    pub key: String,
+    pub value: String,
+}
+
+/// The full local dataset, shaped for a portable backup file.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportBundle {
+    pub version: i64,
+    pub campaigns: Vec<CampaignRow>,
+    pub missions: Vec<MissionRow>,
+    pub focus_sessions: Vec<FocusSessionRow>,
+    pub settings: Vec<SettingRow>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportSummary {
+    pub campaigns_added: i64,
+    pub missions_added: i64,
+    pub sessions_added: i64,
+    pub settings_added: i64,
+}
+
+pub fn export_data(conn: &Connection) -> Result<ExportBundle, String> {
+    let campaigns = conn
+        .prepare("SELECT id, name, status, created_at FROM campaigns ORDER BY created_at ASC")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                Ok(CampaignRow {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    status: row.get(2)?,
+                    created_at: row.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()
+        })
+        .map_err(|error| error.to_string())?;
+
+    let missions = conn
+        .prepare(
+            "SELECT id, title, victory_condition, status, created_at, completed_at, campaign_id
+             FROM missions ORDER BY created_at ASC",
+        )
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                Ok(MissionRow {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    victory_condition: row.get(2)?,
+                    status: row.get(3)?,
+                    created_at: row.get(4)?,
+                    completed_at: row.get(5)?,
+                    campaign_id: row.get(6)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()
+        })
+        .map_err(|error| error.to_string())?;
+
+    let focus_sessions = conn
+        .prepare(
+            "SELECT id, mission_id, state, planned_duration_seconds, focused_duration_seconds,
+                    started_at, completed_at, outcome, total_paused_ms, pause_started_at_ms,
+                    result, blocker, next_action
+             FROM focus_sessions ORDER BY started_at ASC",
+        )
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                Ok(FocusSessionRow {
+                    id: row.get(0)?,
+                    mission_id: row.get(1)?,
+                    state: row.get(2)?,
+                    planned_duration_seconds: row.get(3)?,
+                    focused_duration_seconds: row.get(4)?,
+                    started_at: row.get(5)?,
+                    completed_at: row.get(6)?,
+                    outcome: row.get(7)?,
+                    total_paused_ms: row.get(8)?,
+                    pause_started_at_ms: row.get(9)?,
+                    result: row.get(10)?,
+                    blocker: row.get(11)?,
+                    next_action: row.get(12)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()
+        })
+        .map_err(|error| error.to_string())?;
+
+    let settings = conn
+        .prepare("SELECT key, value FROM settings ORDER BY key ASC")
+        .and_then(|mut stmt| {
+            stmt.query_map([], |row| {
+                Ok(SettingRow {
+                    key: row.get(0)?,
+                    value: row.get(1)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()
+        })
+        .map_err(|error| error.to_string())?;
+
+    Ok(ExportBundle {
+        version: EXPORT_VERSION,
+        campaigns,
+        missions,
+        focus_sessions,
+        settings,
+    })
+}
+
+/// Merge a bundle into the database additively: existing rows (by primary key) are
+/// never overwritten (INSERT OR IGNORE), so importing can only add. Runs in one
+/// transaction — a malformed bundle rolls back entirely rather than half-importing.
+pub fn import_data(conn: &Connection, bundle: &ExportBundle) -> Result<ImportSummary, String> {
+    if bundle.version != EXPORT_VERSION {
+        return Err(format!("unsupported export version {}", bundle.version));
+    }
+    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    let mut summary = ImportSummary {
+        campaigns_added: 0,
+        missions_added: 0,
+        sessions_added: 0,
+        settings_added: 0,
+    };
+    for c in &bundle.campaigns {
+        summary.campaigns_added += tx
+            .execute(
+                "INSERT OR IGNORE INTO campaigns (id, name, status, created_at)
+                 VALUES (?1, ?2, ?3, ?4)",
+                params![c.id, c.name, c.status, c.created_at],
+            )
+            .map_err(|e| e.to_string())? as i64;
+    }
+    // Missions before sessions to satisfy the focus_sessions -> missions foreign key.
+    for m in &bundle.missions {
+        summary.missions_added += tx
+            .execute(
+                "INSERT OR IGNORE INTO missions
+                    (id, title, victory_condition, status, created_at, completed_at, campaign_id)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                params![
+                    m.id,
+                    m.title,
+                    m.victory_condition,
+                    m.status,
+                    m.created_at,
+                    m.completed_at,
+                    m.campaign_id
+                ],
+            )
+            .map_err(|e| e.to_string())? as i64;
+    }
+    for s in &bundle.focus_sessions {
+        summary.sessions_added += tx
+            .execute(
+                "INSERT OR IGNORE INTO focus_sessions
+                    (id, mission_id, state, planned_duration_seconds, focused_duration_seconds,
+                     started_at, completed_at, outcome, total_paused_ms, pause_started_at_ms,
+                     result, blocker, next_action)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                params![
+                    s.id,
+                    s.mission_id,
+                    s.state,
+                    s.planned_duration_seconds,
+                    s.focused_duration_seconds,
+                    s.started_at,
+                    s.completed_at,
+                    s.outcome,
+                    s.total_paused_ms,
+                    s.pause_started_at_ms,
+                    s.result,
+                    s.blocker,
+                    s.next_action
+                ],
+            )
+            .map_err(|e| e.to_string())? as i64;
+    }
+    for st in &bundle.settings {
+        summary.settings_added += tx
+            .execute(
+                "INSERT OR IGNORE INTO settings (key, value) VALUES (?1, ?2)",
+                params![st.key, st.value],
+            )
+            .map_err(|e| e.to_string())? as i64;
+    }
+    tx.commit().map_err(|e| e.to_string())?;
+    Ok(summary)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -607,5 +845,108 @@ mod tests {
         let d = doctrine_get(&conn).unwrap();
         assert_eq!(d.short_break_minutes, 7);
         assert_eq!(d.long_break_minutes, 30);
+    }
+
+    #[test]
+    fn export_then_import_into_a_fresh_db_preserves_records() {
+        let src = db::open(":memory:").unwrap();
+        create_campaign(&src, "c2", "Launch", 1_000).unwrap();
+        set_active_campaign(&src, "c2").unwrap();
+        doctrine_set(&src, 7, 30).unwrap();
+        let mut s = focusing_session();
+        s.complete().unwrap();
+        record_session(&src, &s, 90, 100_000).unwrap();
+        save_debrief(&src, "s1", "done", "", "next").unwrap();
+
+        let bundle = export_data(&src).unwrap();
+
+        let dst = db::open(":memory:").unwrap();
+        let summary = import_data(&dst, &bundle).unwrap();
+        assert!(summary.missions_added >= 1);
+        assert_eq!(summary.sessions_added, 1);
+
+        // The finished session, its campaign attribution and its debrief survive.
+        let recent = recent_records(&dst, 10).unwrap();
+        assert_eq!(recent.len(), 1);
+        assert_eq!(recent[0].id, "s1");
+        let campaign_id: String = dst
+            .query_row(
+                "SELECT campaign_id FROM missions WHERE id = 'm1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(campaign_id, "c2");
+        let result: Option<String> = dst
+            .query_row(
+                "SELECT result FROM focus_sessions WHERE id = 's1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(result.as_deref(), Some("done"));
+        assert_eq!(doctrine_get(&dst).unwrap().short_break_minutes, 7);
+    }
+
+    #[test]
+    fn import_merges_without_overwriting_existing_rows() {
+        let dst = db::open(":memory:").unwrap();
+        let mut s = focusing_session();
+        s.complete().unwrap();
+        record_session(&dst, &s, 60, 61_000).unwrap(); // s1 focused=60 already here
+
+        let bundle = ExportBundle {
+            version: EXPORT_VERSION,
+            campaigns: vec![],
+            missions: vec![MissionRow {
+                id: "m1".into(),
+                title: "changed".into(),
+                victory_condition: None,
+                status: "closed".into(),
+                created_at: "0".into(),
+                completed_at: None,
+                campaign_id: Some("default".into()),
+            }],
+            focus_sessions: vec![FocusSessionRow {
+                id: "s1".into(),
+                mission_id: "m1".into(),
+                state: "complete".into(),
+                planned_duration_seconds: 1,
+                focused_duration_seconds: 1, // would clobber 60 if overwriting
+                started_at: "0".into(),
+                completed_at: Some("1".into()),
+                outcome: Some("completed".into()),
+                total_paused_ms: 0,
+                pause_started_at_ms: None,
+                result: None,
+                blocker: None,
+                next_action: None,
+            }],
+            settings: vec![],
+        };
+        let summary = import_data(&dst, &bundle).unwrap();
+        assert_eq!(summary.sessions_added, 0); // s1 already present -> ignored
+
+        let focused: i64 = dst
+            .query_row(
+                "SELECT focused_duration_seconds FROM focus_sessions WHERE id = 's1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(focused, 60); // existing data untouched
+    }
+
+    #[test]
+    fn import_rejects_an_unsupported_version() {
+        let dst = db::open(":memory:").unwrap();
+        let bundle = ExportBundle {
+            version: 999,
+            campaigns: vec![],
+            missions: vec![],
+            focus_sessions: vec![],
+            settings: vec![],
+        };
+        assert!(import_data(&dst, &bundle).is_err());
     }
 }

@@ -384,6 +384,26 @@ fn doctrine_set(
     repository::doctrine_set(&conn, short_break_minutes, long_break_minutes)
 }
 
+/// Serialize the whole local dataset to a JSON string for a user-saved backup.
+#[tauri::command]
+fn data_export(db: tauri::State<'_, Mutex<Connection>>) -> Result<String, String> {
+    let conn = db.lock().unwrap();
+    let bundle = repository::export_data(&conn)?;
+    serde_json::to_string_pretty(&bundle).map_err(|error| error.to_string())
+}
+
+/// Validate a backup JSON and merge it additively (never overwrites existing rows).
+#[tauri::command]
+fn data_import(
+    db: tauri::State<'_, Mutex<Connection>>,
+    json: String,
+) -> Result<repository::ImportSummary, String> {
+    let bundle: repository::ExportBundle =
+        serde_json::from_str(&json).map_err(|error| format!("invalid backup file: {error}"))?;
+    let conn = db.lock().unwrap();
+    repository::import_data(&conn, &bundle)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -460,7 +480,9 @@ pub fn run() {
             campaign_create,
             campaign_set_active,
             doctrine_get,
-            doctrine_set
+            doctrine_set,
+            data_export,
+            data_import
         ])
         .run(tauri::generate_context!())
         .expect("error while running VIGIL");

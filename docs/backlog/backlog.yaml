@@ -400,7 +400,7 @@ items:
   - id: VIGIL-022
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P1
     title: Add local data export and import
     asset_dependencies:

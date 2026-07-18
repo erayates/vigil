@@ -1,10 +1,22 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCampaignStore } from '@/features/campaign/model/use-campaign-store';
 import { CampaignBoard } from './campaign-board';
 
+const { exportData, importData } = vi.hoisted(() => ({
+  exportData: vi.fn(() => Promise.resolve(null)),
+  importData: vi.fn(() => Promise.resolve(null)),
+}));
+
+vi.mock('@/shared/lib/data-bridge', () => ({
+  dataBridge: { export: exportData, import: importData },
+}));
+
 describe('CampaignBoard campaign selector', () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
   beforeEach(() => {
     window.localStorage.clear();
     useCampaignStore.setState({
@@ -22,5 +34,13 @@ describe('CampaignBoard campaign selector', () => {
 
     expect(useCampaignStore.getState().campaigns).toHaveLength(2);
     expect(screen.getByRole('option', { name: 'Launch' })).toBeInTheDocument();
+  });
+
+  it('triggers a data export from the backup control', () => {
+    render(<CampaignBoard />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+
+    expect(exportData).toHaveBeenCalled();
   });
 });

@@ -388,6 +388,40 @@
   font-size: 0.74rem;
 }
 
+.backup-field {
+  display: grid;
+  gap: 6px;
+  padding: 6px 2px 2px;
+}
+
+.backup-field > strong {
+  color: var(--bronze-300);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #422012;
+}
+
+.backup-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.backup-actions button {
+  border: 2px solid #4d382c;
+  background: #271c18;
+  color: var(--bronze-300);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+}
+
+.backup-actions button:hover {
+  border-color: var(--bronze-500);
+}
+
 .victory-field {
   display: grid;
   gap: 5px;

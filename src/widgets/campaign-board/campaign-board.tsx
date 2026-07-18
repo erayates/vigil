@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
+import { type ChangeEvent, useMemo, useRef, useState } from 'react';
 import { focusModes } from '@/entities/focus-session/model/modes';
 import { useCampaignStore } from '@/features/campaign/model/use-campaign-store';
 import { useDoctrineStore } from '@/features/doctrine/model/use-doctrine-store';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
+import { dataBridge } from '@/shared/lib/data-bridge';
+import { isTauriRuntime } from '@/shared/lib/session-bridge';
 
 const queuedOrders = [
   { title: 'Review design mockups', priority: 'MEDIUM' },
@@ -29,6 +31,28 @@ export function CampaignBoard() {
   const [addingCampaign, setAddingCampaign] = useState(false);
   const activeMode = useMemo(() => focusModes.find((mode) => mode.id === modeId), [modeId]);
   const editingLocked = phase !== 'idle' && phase !== 'complete';
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleExport() {
+    const json = await dataBridge.export();
+    if (!json) return;
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'vigil-backup.json';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // let the same file be re-picked later
+    if (!file) return;
+    const summary = await dataBridge.import(await file.text());
+    // The merge landed in SQLite; reload the webview to re-hydrate the stores.
+    if (summary && isTauriRuntime()) window.location.reload();
+  }
 
   return (
     <section
@@ -215,6 +239,26 @@ export function CampaignBoard() {
             onBlur={(event) =>
               setDoctrine(shortBreakMinutes, Number(event.target.value) || longBreakMinutes)
             }
+          />
+        </div>
+      </div>
+
+      <div className="backup-field">
+        <strong>Local data</strong>
+        <div className="backup-actions">
+          <button type="button" onClick={handleExport}>
+            Export
+          </button>
+          <button type="button" onClick={() => importInputRef.current?.click()}>
+            Import
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json"
+            className="sr-only"
+            aria-label="Import data file"
+            onChange={handleImportFile}
           />
         </div>
       </div>
