@@ -316,7 +316,7 @@ items:
   - id: VIGIL-016
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P2
     title: Add weekly local summary
     asset_dependencies:

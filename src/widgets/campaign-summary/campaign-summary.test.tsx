@@ -34,4 +34,28 @@ describe('CampaignSummary', () => {
     // 1 completed of 6 => 17%. If the abandoned one counted, it would be 33%.
     expect(screen.getByLabelText('17 percent complete')).toBeInTheDocument();
   });
+
+  it('sums focus time and completed watches across the last seven days', () => {
+    const now = Date.now();
+    const daysAgo = (n: number) => new Date(now - n * 24 * 3600 * 1000).toISOString();
+    useFocusStore.setState({
+      history: [
+        record({ id: 'a', focusedDurationSeconds: 1500, completedAtIso: daysAgo(0) }),
+        record({ id: 'b', focusedDurationSeconds: 600, completedAtIso: daysAgo(3) }),
+        record({
+          id: 'c',
+          outcome: 'abandoned',
+          focusedDurationSeconds: 300,
+          completedAtIso: daysAgo(5),
+        }),
+        // 30 days ago: outside the week, must be excluded.
+        record({ id: 'd', focusedDurationSeconds: 900, completedAtIso: daysAgo(30) }),
+      ],
+    });
+
+    render(<CampaignSummary />);
+
+    // 1500 + 600 + 300 = 2400s = 40m of focus in the week; 2 completed (a, b).
+    expect(screen.getByLabelText('This week')).toHaveTextContent(/40m.*2 watches/);
+  });
 });
