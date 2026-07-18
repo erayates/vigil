@@ -41,6 +41,28 @@ pub fn migrations() -> Migrations<'static> {
              ALTER TABLE focus_sessions ADD COLUMN blocker TEXT;
              ALTER TABLE focus_sessions ADD COLUMN next_action TEXT;",
         ),
+        M::up(
+            // Campaigns group missions under a long-term goal. A key/value settings
+            // table holds the active campaign so it survives restart. Existing
+            // missions backfill to a seeded default campaign (no data loss).
+            // campaign_id is a plain column (SQLite can't reliably ALTER-ADD a
+            // foreign key); the app is the single writer and only sets valid ids.
+            "CREATE TABLE campaigns (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+            ALTER TABLE missions ADD COLUMN campaign_id TEXT;
+            INSERT INTO campaigns (id, name, status, created_at)
+                VALUES ('default', 'General Campaign', 'active', '0');
+            UPDATE missions SET campaign_id = 'default';
+            INSERT INTO settings (key, value) VALUES ('active_campaign_id', 'default');",
+        ),
     ])
 }
 
@@ -112,6 +134,40 @@ mod tests {
             )
             .unwrap();
         assert_eq!(tables, 3);
+    }
+
+    #[test]
+    fn campaign_migration_backfills_existing_missions_without_loss() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        conn.pragma_update(None, "foreign_keys", true).unwrap();
+        let m = migrations();
+        // Schema as it stood before the campaigns migration.
+        m.to_version(&mut conn, 3).unwrap();
+        conn.execute(
+            "INSERT INTO missions (id, title, status, created_at)
+             VALUES ('m1', 'Ship it', 'closed', '0')",
+            [],
+        )
+        .unwrap();
+        // Apply the campaigns migration.
+        m.to_version(&mut conn, 4).unwrap();
+
+        let campaign_id: String = conn
+            .query_row(
+                "SELECT campaign_id FROM missions WHERE id = 'm1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(campaign_id, "default");
+        let active: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'active_campaign_id'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(active, "default");
     }
 
     #[test]

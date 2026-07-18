@@ -288,7 +288,7 @@ items:
   - id: VIGIL-014
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P1
     title: Add campaign entity and mission attribution
     asset_dependencies:

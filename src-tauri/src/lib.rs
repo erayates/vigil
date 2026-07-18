@@ -300,6 +300,37 @@ fn session_history(
     repository::recent_records(&conn, 50)
 }
 
+#[tauri::command]
+fn campaign_get(
+    db: tauri::State<'_, Mutex<Connection>>,
+) -> Result<repository::CampaignSnapshot, String> {
+    let conn = db.lock().unwrap();
+    repository::campaign_snapshot(&conn)
+}
+
+/// Create a campaign and make it active (new missions attribute to it).
+#[tauri::command]
+fn campaign_create(
+    db: tauri::State<'_, Mutex<Connection>>,
+    name: String,
+) -> Result<repository::CampaignSnapshot, String> {
+    let conn = db.lock().unwrap();
+    let id = Uuid::new_v4().to_string();
+    repository::create_campaign(&conn, &id, &name, now_ms())?;
+    repository::set_active_campaign(&conn, &id)?;
+    repository::campaign_snapshot(&conn)
+}
+
+#[tauri::command]
+fn campaign_set_active(
+    db: tauri::State<'_, Mutex<Connection>>,
+    id: String,
+) -> Result<repository::CampaignSnapshot, String> {
+    let conn = db.lock().unwrap();
+    repository::set_active_campaign(&conn, &id)?;
+    repository::campaign_snapshot(&conn)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -369,7 +400,10 @@ pub fn run() {
             session_reset,
             session_open_debrief,
             session_record,
-            session_history
+            session_history,
+            campaign_get,
+            campaign_create,
+            campaign_set_active
         ])
         .run(tauri::generate_context!())
         .expect("error while running VIGIL");

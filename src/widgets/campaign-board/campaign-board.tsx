@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { focusModes } from '@/entities/focus-session/model/modes';
+import { useCampaignStore } from '@/features/campaign/model/use-campaign-store';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 
 const queuedOrders = [
@@ -20,7 +21,10 @@ export function CampaignBoard() {
     setModeId,
     setCustomDurationMinutes,
   } = useFocusStore();
+  const { campaigns, activeId, createCampaign, setActiveCampaign } = useCampaignStore();
   const [priority, setPriority] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
+  const [newCampaign, setNewCampaign] = useState('');
+  const [addingCampaign, setAddingCampaign] = useState(false);
   const activeMode = useMemo(() => focusModes.find((mode) => mode.id === modeId), [modeId]);
   const editingLocked = phase !== 'idle' && phase !== 'complete';
 
@@ -34,6 +38,47 @@ export function CampaignBoard() {
         <h2 id="campaign-title">Today&apos;s Campaign</h2>
         <span aria-hidden="true">✦</span>
       </header>
+
+      <div className="campaign-selector">
+        <label htmlFor="active-campaign" className="sr-only">
+          Active campaign
+        </label>
+        <select
+          id="active-campaign"
+          value={activeId}
+          onChange={(event) => setActiveCampaign(event.target.value)}
+        >
+          {campaigns.map((campaign) => (
+            <option key={campaign.id} value={campaign.id}>
+              {campaign.name}
+            </option>
+          ))}
+        </select>
+        {addingCampaign ? (
+          <form
+            className="campaign-add"
+            onSubmit={(event) => {
+              event.preventDefault();
+              createCampaign(newCampaign);
+              setNewCampaign('');
+              setAddingCampaign(false);
+            }}
+          >
+            <input
+              aria-label="New campaign name"
+              value={newCampaign}
+              maxLength={60}
+              placeholder="Campaign name"
+              onChange={(event) => setNewCampaign(event.target.value)}
+            />
+            <button type="submit">Add</button>
+          </form>
+        ) : (
+          <button type="button" onClick={() => setAddingCampaign(true)}>
+            ＋ New campaign
+          </button>
+        )}
+      </div>
 
       <div className="campaign-orders">
         <article className="campaign-order campaign-order--active">

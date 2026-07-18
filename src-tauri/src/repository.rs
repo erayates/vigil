@@ -39,9 +39,13 @@ pub fn record_session(
         return Ok(());
     };
 
+    // Attribute the mission to the campaign that was active when it first landed.
+    // campaign_id is set on INSERT only (absent from DO UPDATE), so switching the
+    // active campaign mid-session never re-attributes a running mission.
+    let campaign_id = active_campaign_id(conn)?;
     conn.execute(
-        "INSERT INTO missions (id, title, victory_condition, status, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5)
+        "INSERT INTO missions (id, title, victory_condition, status, created_at, campaign_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
          ON CONFLICT(id) DO UPDATE SET
              title = excluded.title,
              victory_condition = excluded.victory_condition,
@@ -56,6 +60,7 @@ pub fn record_session(
                 "active"
             },
             now_ms.to_string(),
+            campaign_id,
         ],
     )
     .map_err(|error| error.to_string())?;
@@ -236,6 +241,79 @@ pub fn recent_records(conn: &Connection, limit: i64) -> Result<Vec<HistoryRecord
         .map_err(|error| error.to_string())
 }
 
+/// A long-term project container. Missions attribute their focus time to one.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Campaign {
+    pub id: String,
+    pub name: String,
+    pub status: String,
+}
+
+/// The full campaign picture for the frontend: every campaign plus the active id.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CampaignSnapshot {
+    pub campaigns: Vec<Campaign>,
+    pub active_id: String,
+}
+
+/// The active campaign id (new missions attribute here). Falls back to the seeded
+/// 'default' campaign if the setting is somehow absent.
+pub fn active_campaign_id(conn: &Connection) -> Result<String, String> {
+    conn.query_row(
+        "SELECT value FROM settings WHERE key = 'active_campaign_id'",
+        [],
+        |row| row.get(0),
+    )
+    .optional()
+    .map(|value| value.unwrap_or_else(|| "default".to_string()))
+    .map_err(|error| error.to_string())
+}
+
+pub fn set_active_campaign(conn: &Connection, id: &str) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO settings (key, value) VALUES ('active_campaign_id', ?1)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        params![id],
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(())
+}
+
+pub fn create_campaign(conn: &Connection, id: &str, name: &str, now_ms: i64) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO campaigns (id, name, status, created_at) VALUES (?1, ?2, 'active', ?3)",
+        params![id, name, now_ms.to_string()],
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(())
+}
+
+pub fn list_campaigns(conn: &Connection) -> Result<Vec<Campaign>, String> {
+    let mut stmt = conn
+        .prepare("SELECT id, name, status FROM campaigns ORDER BY created_at ASC, name ASC")
+        .map_err(|error| error.to_string())?;
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(Campaign {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                status: row.get(2)?,
+            })
+        })
+        .map_err(|error| error.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| error.to_string())
+}
+
+pub fn campaign_snapshot(conn: &Connection) -> Result<CampaignSnapshot, String> {
+    Ok(CampaignSnapshot {
+        campaigns: list_campaigns(conn)?,
+        active_id: active_campaign_id(conn)?,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -395,5 +473,63 @@ mod tests {
         assert_eq!(records[0].focused_duration_seconds, 90);
         assert_eq!(records[0].completed_at_ms, 100_000);
         assert_eq!(records[0].outcome, "completed");
+    }
+
+    #[test]
+    fn default_campaign_is_seeded_and_active() {
+        let conn = db::open(":memory:").unwrap();
+        let snap = campaign_snapshot(&conn).unwrap();
+        assert_eq!(snap.active_id, "default");
+        assert_eq!(snap.campaigns.len(), 1);
+        assert_eq!(snap.campaigns[0].id, "default");
+    }
+
+    #[test]
+    fn create_then_activate_a_campaign() {
+        let conn = db::open(":memory:").unwrap();
+        create_campaign(&conn, "c2", "Launch", 1_000).unwrap();
+        set_active_campaign(&conn, "c2").unwrap();
+        let snap = campaign_snapshot(&conn).unwrap();
+        assert_eq!(snap.active_id, "c2");
+        assert_eq!(snap.campaigns.len(), 2);
+    }
+
+    #[test]
+    fn a_session_attributes_its_mission_to_the_active_campaign() {
+        let conn = db::open(":memory:").unwrap();
+        create_campaign(&conn, "c2", "Launch", 1_000).unwrap();
+        set_active_campaign(&conn, "c2").unwrap();
+
+        let mut s = focusing_session();
+        s.complete().unwrap();
+        record_session(&conn, &s, 90, 100_000).unwrap();
+
+        let campaign_id: String = conn
+            .query_row(
+                "SELECT campaign_id FROM missions WHERE id = 'm1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(campaign_id, "c2");
+    }
+
+    #[test]
+    fn switching_the_active_campaign_does_not_re_attribute_a_running_mission() {
+        let conn = db::open(":memory:").unwrap();
+        let s = focusing_session();
+        record_session(&conn, &s, 60, 61_000).unwrap(); // lands under 'default'
+        create_campaign(&conn, "c2", "Launch", 1_000).unwrap();
+        set_active_campaign(&conn, "c2").unwrap();
+        record_session(&conn, &s, 90, 91_000).unwrap(); // later update must not move it
+
+        let campaign_id: String = conn
+            .query_row(
+                "SELECT campaign_id FROM missions WHERE id = 'm1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(campaign_id, "default");
     }
 }
