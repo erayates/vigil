@@ -623,6 +623,23 @@
   border-color: #8f2a20;
 }
 
+.companion-recall {
+  align-self: center;
+  margin-top: 8px;
+  padding: 4px 14px;
+  border: 2px solid #4d382c;
+  background: #271c18;
+  color: var(--bronze-300);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.companion-recall:hover {
+  border-color: var(--bronze-500);
+  color: var(--bronze-400);
+}
+
 .control-icon {
   font-family: Consolas, monospace;
   font-size: 1.65rem;

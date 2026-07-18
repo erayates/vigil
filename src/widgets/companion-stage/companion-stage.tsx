@@ -1,4 +1,5 @@
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
+import { nativeBridge } from '@/shared/lib/native-bridge';
 import { PixelCompanion } from '@/widgets/pixel-companion/pixel-companion';
 import '@/widgets/pixel-companion/pixel-companion.css';
 
@@ -35,6 +36,17 @@ export function CompanionStage() {
         <span className="flame flame--two" />
         <i />
       </div>
+      <button
+        className="companion-recall"
+        type="button"
+        title="Bring the companion back and turn off click-through if it stopped responding to the mouse"
+        onClick={() => {
+          void nativeBridge.showCompanion();
+          void nativeBridge.setCompanionClickThrough(false);
+        }}
+      >
+        Recall companion
+      </button>
     </aside>
   );
 }
