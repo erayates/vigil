@@ -10,6 +10,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Emitter, Manager};
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+use tauri_plugin_notification::NotificationExt;
 use uuid::Uuid;
 
 fn now_ms() -> i64 {
@@ -206,6 +209,13 @@ fn session_complete(
         session.snapshot(now)
     };
     broadcast(&app, &snapshot);
+    // One native notification on completion; a denied OS permission just fails here.
+    let _ = app
+        .notification()
+        .builder()
+        .title("Watch complete")
+        .body("Hold the line — record your debrief.")
+        .show();
     Ok(snapshot)
 }
 
@@ -454,6 +464,19 @@ fn companion_prefs_set(
     Ok(prefs)
 }
 
+/// Bring the companion back and re-enable mouse interaction, and surface the main
+/// window. Shared by the tray and the global shortcut (VIGIL-009 recovery path).
+fn recover_companion(app: &tauri::AppHandle) {
+    if let Some(companion) = app.get_webview_window("companion") {
+        let _ = companion.show();
+        let _ = companion.set_ignore_cursor_events(false);
+    }
+    if let Some(main) = app.get_webview_window("main") {
+        let _ = main.show();
+        let _ = main.set_focus();
+    }
+}
+
 /// Build the system tray: show/hide the companion (disabling click-through on
 /// show, which closes VIGIL-009's deferred recovery path), open the main window,
 /// toggle close-to-tray, and quit. Backend-created, so no extra capability.
@@ -481,6 +504,14 @@ fn setup_tray(app: &tauri::AppHandle, close_to_tray_enabled: bool) -> tauri::Res
         close_to_tray_enabled,
         None::<&str>,
     )?;
+    let autostart_i = CheckMenuItem::with_id(
+        app,
+        "tray_autostart",
+        "Launch at login",
+        true,
+        app.autolaunch().is_enabled().unwrap_or(false),
+        None::<&str>,
+    )?;
     let quit_i = MenuItem::with_id(app, "tray_quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
@@ -489,6 +520,7 @@ fn setup_tray(app: &tauri::AppHandle, close_to_tray_enabled: bool) -> tauri::Res
             &hide_companion_i,
             &open_main_i,
             &close_to_tray_i,
+            &autostart_i,
             &quit_i,
         ],
     )?;
@@ -534,6 +566,18 @@ fn setup_tray(app: &tauri::AppHandle, close_to_tray_enabled: bool) -> tauri::Res
                 );
                 let _ = close_to_tray_i.set_checked(next);
             }
+            "tray_autostart" => {
+                let manager = app.autolaunch();
+                let next = !manager.is_enabled().unwrap_or(false);
+                let result = if next {
+                    manager.enable()
+                } else {
+                    manager.disable()
+                };
+                if result.is_ok() {
+                    let _ = autostart_i.set_checked(next);
+                }
+            }
             "tray_quit" => app.exit(0),
             _ => {}
         })
@@ -557,6 +601,20 @@ fn setup_tray(app: &tauri::AppHandle, close_to_tray_enabled: bool) -> tauri::Res
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state == ShortcutState::Pressed {
+                        recover_companion(app);
+                    }
+                })
+                .build(),
+        )
         .manage(Mutex::new(SessionState::idle()))
         .setup(|app| {
             let mut path = app.path().app_data_dir()?;
@@ -605,6 +663,14 @@ pub fn run() {
             }
 
             setup_tray(app.handle(), close_to_tray_enabled)?;
+
+            // Global recovery shortcut (Ctrl+Shift+V): bring back the companion and
+            // main window from anywhere. Best-effort — a conflict is logged, not fatal.
+            let recover_shortcut =
+                Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyV);
+            if let Err(error) = app.global_shortcut().register(recover_shortcut) {
+                eprintln!("[vigil] could not register recovery shortcut: {error}");
+            }
 
             Ok(())
         })

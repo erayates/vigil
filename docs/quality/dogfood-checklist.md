@@ -62,6 +62,12 @@ Legend: ⬜ to check · ✅ ok · ❌ issue (describe under Findings).
 - ⬜ Tray **Hide companion** / **Open VIGIL** / **Quit** work; left-click the tray opens the main window.
 - ⬜ Enable **Close to tray** → closing the main window hides it to the tray (Quit still exits).
 
+## VIGIL-019 / 018 / 020 — OS integration
+
+- ⬜ Complete a watch → exactly **one** native notification appears ("Watch complete").
+- ⬜ With the app unfocused, press **Ctrl+Shift+V** → the companion returns (mouse works again) and the main window surfaces.
+- ⬜ Tray **Launch at login** → enable it → sign out/in (or reboot) → VIGIL starts automatically; disable → it no longer does.
+
 ## Findings
 
 | #   | Feature | Observation | Severity (P0/P1/P2) |

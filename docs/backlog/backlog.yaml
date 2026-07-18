@@ -344,7 +344,7 @@ items:
   - id: VIGIL-018
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P2
     title: Add a global shortcut
     asset_dependencies:
@@ -358,7 +358,7 @@ items:
   - id: VIGIL-019
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P2
     title: Add native completion notification
     asset_dependencies:
@@ -372,7 +372,7 @@ items:
   - id: VIGIL-020
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P2
     title: Add autostart preference
     asset_dependencies:
