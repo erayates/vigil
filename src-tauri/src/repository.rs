@@ -2,15 +2,6 @@ use crate::session::{Phase, SessionState};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
-pub struct StoredSession {
-    pub id: String,
-    pub mission_title: String,
-    pub state: String,
-    pub planned_duration_seconds: i64,
-    pub focused_duration_seconds: i64,
-    pub outcome: Option<String>,
-}
-
 fn phase_from_str(value: &str) -> Phase {
     match value {
         "preparing" => Phase::Preparing,
@@ -166,33 +157,6 @@ pub fn active_session(conn: &Connection) -> Result<Option<SessionState>, String>
     )
     .optional()
     .map_err(|error| error.to_string())
-}
-
-pub fn list_recent(conn: &Connection, limit: i64) -> Result<Vec<StoredSession>, String> {
-    let mut stmt = conn
-        .prepare(
-            "SELECT s.id, m.title, s.state, s.planned_duration_seconds,
-                    s.focused_duration_seconds, s.outcome
-             FROM focus_sessions s
-             JOIN missions m ON m.id = s.mission_id
-             ORDER BY s.started_at DESC
-             LIMIT ?1",
-        )
-        .map_err(|error| error.to_string())?;
-    let rows = stmt
-        .query_map(params![limit], |row| {
-            Ok(StoredSession {
-                id: row.get(0)?,
-                mission_title: row.get(1)?,
-                state: row.get(2)?,
-                planned_duration_seconds: row.get(3)?,
-                focused_duration_seconds: row.get(4)?,
-                outcome: row.get(5)?,
-            })
-        })
-        .map_err(|error| error.to_string())?;
-    rows.collect::<Result<Vec<_>, _>>()
-        .map_err(|error| error.to_string())
 }
 
 /// A finished (completed or abandoned) session, shaped for the frontend history.
@@ -687,7 +651,10 @@ mod tests {
             .unwrap();
         record_session(&conn, &s, 0, 2_000).unwrap();
         assert_eq!(active_session_count(&conn).unwrap(), 0);
-        assert!(list_recent(&conn, 10).unwrap().is_empty());
+        let rows: i64 = conn
+            .query_row("SELECT count(*) FROM focus_sessions", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(rows, 0);
     }
 
     #[test]
@@ -708,10 +675,10 @@ mod tests {
         record_session(&conn, &s, 60, 61_000).unwrap();
         assert_eq!(active_session_count(&conn).unwrap(), 0);
         assert!(active_session(&conn).unwrap().is_none());
-        let recent = list_recent(&conn, 10).unwrap();
+        let recent = recent_records(&conn, 10).unwrap();
         assert_eq!(recent.len(), 1);
         assert_eq!(recent[0].mission_title, "Ship slice");
-        assert_eq!(recent[0].outcome.as_deref(), Some("completed"));
+        assert_eq!(recent[0].outcome, "completed");
     }
 
     #[test]
@@ -726,7 +693,7 @@ mod tests {
             record_session(&conn, &s, 120, 121_000).unwrap();
         }
         let conn = db::open(path_str).unwrap();
-        let recent = list_recent(&conn, 10).unwrap();
+        let recent = recent_records(&conn, 10).unwrap();
         assert_eq!(recent.len(), 1);
         assert_eq!(recent[0].id, "s1");
         assert_eq!(recent[0].focused_duration_seconds, 120);
@@ -770,7 +737,7 @@ mod tests {
         let mut recovered = active_session(&conn).unwrap().expect("an active session");
         recovered.complete().unwrap();
         record_session(&conn, &recovered, 60, 62_000).unwrap();
-        assert_eq!(list_recent(&conn, 10).unwrap().len(), 1); // one record, not two
+        assert_eq!(recent_records(&conn, 10).unwrap().len(), 1); // one record, not two
         assert!(active_session(&conn).unwrap().is_none());
     }
 
@@ -794,10 +761,7 @@ mod tests {
         assert_eq!(blocker, None); // whitespace-only -> NULL
         assert_eq!(next.as_deref(), Some("Write tests"));
         // The debrief must not disturb the finished row's outcome.
-        assert_eq!(
-            list_recent(&conn, 10).unwrap()[0].outcome.as_deref(),
-            Some("completed")
-        );
+        assert_eq!(recent_records(&conn, 10).unwrap()[0].outcome, "completed");
     }
 
     #[test]

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { formatDuration } from '@/entities/focus-session/lib/time';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { nativeBridge } from '@/shared/lib/native-bridge';
@@ -48,6 +48,17 @@ export function FocusChamber() {
     const intervalId = window.setInterval(() => tick(), 250);
     return () => window.clearInterval(intervalId);
   }, [phase, tick]);
+
+  // Tuck the companion away when a break ends — whether it elapses on its own or
+  // is ended manually. Keyed on the break→idle transition, so it never fights the
+  // "Recall companion" control (which shows the companion while already idle).
+  const prevPhaseRef = useRef(phase);
+  useEffect(() => {
+    if (prevPhaseRef.current === 'break' && phase === 'idle') {
+      void nativeBridge.hideCompanion();
+    }
+    prevPhaseRef.current = phase;
+  }, [phase]);
 
   const elapsedPercent = Math.max(
     0,
@@ -133,10 +144,7 @@ export function FocusChamber() {
           <button
             className="control-button control-button--start"
             type="button"
-            onClick={() => {
-              endBreak();
-              void nativeBridge.hideCompanion();
-            }}
+            onClick={() => endBreak()}
           >
             <span className="control-icon" aria-hidden="true">
               ✔

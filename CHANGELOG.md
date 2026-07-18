@@ -2,14 +2,43 @@
 
 All notable changes follow Keep a Changelog structure. The project uses Semantic Versioning with the pre-1.0 policy defined in `docs/roadmap/release-plan.md`.
 
-## [Unreleased]
+## [0.2.0] - 2026-07-18 — Daily-use alpha (feature-complete)
 
-### Planned for 0.0.3
+Feature-complete; release gated on the seven-day dogfood (VIGIL-023) and the five-user test (VIGIL-012).
 
-- Deterministic visual-regression harness.
-- Keyboard/focus and control-state review.
-- Viewport/DPI layout presets.
-- Production UI and character asset request handoff.
+### Added
+
+- Debrief flow — capture result, blocker and next action after a watch.
+- Campaign entity with mission attribution and an active-campaign selector.
+- Break state and Doctrine (short/long break lengths).
+- Weekly local focus summary.
+- System tray — show/hide companion, open, close-to-tray, quit.
+- Global recovery shortcut (Ctrl+Shift+V).
+- Native completion notification.
+- Autostart (launch at login) preference.
+- Companion window preferences (side, scale, opacity).
+- Local data export and import.
+
+## [0.1.0] - 2026-07-18 — Vertical slice alpha
+
+### Added
+
+- Authoritative cross-window session state machine in the Rust core.
+- Mission, timestamp-derived timer and companion synchronization.
+- SQLite persistence, restart recovery, and completion/abandon flows.
+- Deterministic dashboard visual-regression and critical-path e2e tests.
+
+## [0.0.4] - 2026-07-18 — Architecture stabilization
+
+### Added
+
+- Cross-window session ownership, SQLite migration/repository spike, per-window capability separation, CSP decision and the supporting ADRs.
+
+## [0.0.3] - 2026-07-18 — Interaction and visual validation
+
+### Added
+
+- Keyboard/control-state pass and the deterministic visual-regression harness.
 
 ## [0.0.2] - 2026-07-17
 
