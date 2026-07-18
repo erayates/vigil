@@ -3,7 +3,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { z } from 'zod';
 
 const sessionSnapshotSchema = z.object({
-  phase: z.enum(['idle', 'preparing', 'focusing', 'paused', 'complete', 'abandoned']),
+  phase: z.enum(['idle', 'preparing', 'focusing', 'paused', 'complete', 'abandoned', 'debrief']),
   missionTitle: z.string(),
   victoryCondition: z.string(),
   plannedDurationSecs: z.number(),
@@ -33,6 +33,12 @@ export interface StartSessionArgs {
   plannedDurationSecs: number;
 }
 
+export interface DebriefFields {
+  result: string;
+  blocker: string;
+  nextAction: string;
+}
+
 export function isTauriRuntime(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
@@ -59,6 +65,8 @@ export const sessionBridge = {
   pause: () => call('session_pause'),
   resume: () => call('session_resume'),
   complete: () => call('session_complete'),
+  openDebrief: () => call('session_open_debrief'),
+  record: (fields: DebriefFields) => call('session_record', { ...fields }),
   reset: () => call('session_reset'),
   history: async (): Promise<HistoryRecordDto[]> => {
     if (!isTauriRuntime()) return [];

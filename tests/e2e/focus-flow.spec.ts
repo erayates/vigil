@@ -22,6 +22,12 @@ test('a full watch runs from mission through pause/resume to completion', async 
 
   // Let the 25-minute standard watch elapse; the timer auto-completes.
   await page.clock.fastForward(26 * 60 * 1000);
-  await expect(page.getByText('Watch complete. Record the result.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Record' })).toBeVisible();
+  await expect(page.getByText('Watch complete. Debrief the result.')).toBeVisible();
+
+  // Debrief: open it, log the outcome, record, and return to idle.
+  await page.getByRole('button', { name: 'Debrief' }).click();
+  await page.getByLabel('Result').fill('Shipped the vertical slice');
+  await page.getByLabel('Next action').fill('Start the daily-use alpha');
+  await page.getByRole('button', { name: 'Record' }).click();
+  await expect(page.getByText('Define one mission, then hold the line.')).toBeVisible();
 });

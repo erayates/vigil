@@ -4,7 +4,7 @@ mod session;
 pub mod window;
 
 use rusqlite::Connection;
-use session::{SessionSnapshot, SessionState};
+use session::{Phase, SessionSnapshot, SessionState};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{Emitter, Manager};
@@ -241,6 +241,57 @@ fn session_reset(
     snapshot
 }
 
+/// OPEN_DEBRIEF — enter the optional debrief after a watch ends. The finished row
+/// is already persisted; this only changes phase, so it must not call `persist`
+/// (which would overwrite the terminal state/outcome with a non-terminal one).
+#[tauri::command]
+fn session_open_debrief(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .open_debrief()
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+/// RECORD — attach the debrief to the finished row, then return to Idle. Blank
+/// fields are stored as NULL by the repository.
+#[tauri::command]
+fn session_record(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+    db: tauri::State<'_, Mutex<Connection>>,
+    result: String,
+    blocker: String,
+    next_action: String,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        if session.phase != Phase::Debrief {
+            return Err("invalid transition".to_string());
+        }
+        let id = session.id.clone().ok_or("no session to debrief")?;
+        {
+            let conn = db.lock().unwrap();
+            repository::save_debrief(&conn, &id, &result, &blocker, &next_action)?;
+        }
+        session
+            .record()
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
 #[tauri::command]
 fn session_history(
     db: tauri::State<'_, Mutex<Connection>>,
@@ -316,6 +367,8 @@ pub fn run() {
             session_resume,
             session_complete,
             session_reset,
+            session_open_debrief,
+            session_record,
             session_history
         ])
         .run(tauri::generate_context!())

@@ -3,7 +3,12 @@ import { persist } from 'zustand/middleware';
 import { focusModes } from '@/entities/focus-session/model/modes';
 import { calculateRemainingSeconds } from '@/entities/focus-session/lib/time';
 import type { FocusModeId, FocusPhase, SessionRecord } from '@/entities/focus-session/model/types';
-import { isTauriRuntime, sessionBridge, type SessionSnapshot } from '@/shared/lib/session-bridge';
+import {
+  isTauriRuntime,
+  sessionBridge,
+  type DebriefFields,
+  type SessionSnapshot,
+} from '@/shared/lib/session-bridge';
 
 interface FocusState {
   missionTitle: string;
@@ -29,6 +34,8 @@ interface FocusState {
   tick: (nowMs?: number) => void;
   completeSession: () => void;
   abandonSession: () => void;
+  openDebrief: () => void;
+  recordDebrief: (fields: DebriefFields) => void;
   resetSession: () => void;
 }
 
@@ -185,6 +192,43 @@ export const useFocusStore = create<FocusState>()(
           return;
         }
         set({ phase: 'abandoned', pauseStartedAtMs: null });
+      },
+      // OPEN_DEBRIEF — the finished watch enters the optional debrief step.
+      openDebrief: () => {
+        const state = get();
+        if (!['complete', 'abandoned'].includes(state.phase)) return;
+        if (isTauriRuntime()) {
+          void sessionBridge.openDebrief();
+          return;
+        }
+        set({ phase: 'debrief' });
+      },
+      // RECORD — attach the debrief to the just-finished record, then return to idle.
+      recordDebrief: (fields) => {
+        const state = get();
+        if (state.phase !== 'debrief') return;
+        if (isTauriRuntime()) {
+          void sessionBridge.record(fields);
+          return;
+        }
+        // Only attach non-blank answers, so a skipped field stays absent (mirrors
+        // the Rust side storing blanks as NULL).
+        const debrief: Partial<Pick<SessionRecord, 'result' | 'blocker' | 'nextAction'>> = {};
+        if (fields.result.trim()) debrief.result = fields.result.trim();
+        if (fields.blocker.trim()) debrief.blocker = fields.blocker.trim();
+        if (fields.nextAction.trim()) debrief.nextAction = fields.nextAction.trim();
+        const [latest, ...rest] = state.history;
+        const history = latest ? [{ ...latest, ...debrief }, ...rest] : state.history;
+        const plannedDurationSeconds = durationFor(state.modeId, state.customDurationMinutes);
+        set({
+          phase: 'idle',
+          history,
+          remainingSeconds: plannedDurationSeconds,
+          plannedDurationSeconds,
+          startedAtMs: null,
+          pauseStartedAtMs: null,
+          totalPausedMs: 0,
+        });
       },
       resetSession: () => {
         const state = get();

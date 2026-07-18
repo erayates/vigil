@@ -9,6 +9,7 @@ pub enum Phase {
     Paused,
     Complete,
     Abandoned,
+    Debrief,
 }
 
 impl Phase {
@@ -20,6 +21,7 @@ impl Phase {
             Phase::Paused => "paused",
             Phase::Complete => "complete",
             Phase::Abandoned => "abandoned",
+            Phase::Debrief => "debrief",
         }
     }
 
@@ -160,6 +162,26 @@ impl SessionState {
         }
         self.phase = Phase::Abandoned;
         self.pause_started_at_ms = None;
+        Ok(())
+    }
+
+    /// OPEN_DEBRIEF / CAPTURE_REASON — after a watch ends, move to the optional
+    /// debrief step. The finished row is already persisted; this only changes phase.
+    pub fn open_debrief(&mut self) -> Result<(), SessionError> {
+        if !matches!(self.phase, Phase::Complete | Phase::Abandoned) {
+            return Err(SessionError::InvalidTransition);
+        }
+        self.phase = Phase::Debrief;
+        Ok(())
+    }
+
+    /// RECORD — the debrief is captured; return to Idle. The caller persists the
+    /// debrief fields to the finished row before calling this.
+    pub fn record(&mut self) -> Result<(), SessionError> {
+        if self.phase != Phase::Debrief {
+            return Err(SessionError::InvalidTransition);
+        }
+        *self = SessionState::idle();
         Ok(())
     }
 
@@ -346,6 +368,52 @@ mod tests {
         assert!(matches!(s.abandon(), Err(SessionError::InvalidTransition)));
         let mut p = preparing(1500);
         assert!(matches!(p.abandon(), Err(SessionError::InvalidTransition)));
+    }
+
+    #[test]
+    fn open_debrief_from_complete_or_abandoned() {
+        let mut c = started();
+        c.complete().unwrap();
+        c.open_debrief().unwrap();
+        assert_eq!(c.phase, Phase::Debrief);
+        // The mission survives into the debrief so the caller can persist against it.
+        assert_eq!(c.id.as_deref(), Some("sid"));
+
+        let mut a = started();
+        a.abandon().unwrap();
+        a.open_debrief().unwrap();
+        assert_eq!(a.phase, Phase::Debrief);
+    }
+
+    #[test]
+    fn open_debrief_rejected_unless_finished() {
+        let mut s = started();
+        assert!(matches!(
+            s.open_debrief(),
+            Err(SessionError::InvalidTransition)
+        ));
+        let mut i = SessionState::idle();
+        assert!(matches!(
+            i.open_debrief(),
+            Err(SessionError::InvalidTransition)
+        ));
+    }
+
+    #[test]
+    fn record_returns_debrief_to_idle() {
+        let mut s = started();
+        s.complete().unwrap();
+        s.open_debrief().unwrap();
+        s.record().unwrap();
+        assert_eq!(s.phase, Phase::Idle);
+        assert_eq!(s.id, None);
+    }
+
+    #[test]
+    fn record_rejected_unless_debriefing() {
+        let mut s = started();
+        s.complete().unwrap();
+        assert!(matches!(s.record(), Err(SessionError::InvalidTransition)));
     }
 
     #[test]

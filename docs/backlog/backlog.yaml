@@ -274,7 +274,7 @@ items:
   - id: VIGIL-013
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P1
     title: Implement the debrief flow
     asset_dependencies:

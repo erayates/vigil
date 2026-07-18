@@ -96,6 +96,33 @@ pub fn record_session(
     Ok(())
 }
 
+/// Attach the debrief (result, blocker, next action) to a finished session row.
+/// Blank fields are stored as NULL so a skipped answer stays absent. Only the
+/// debrief columns are touched — state, outcome and completion time are untouched.
+pub fn save_debrief(
+    conn: &Connection,
+    session_id: &str,
+    result: &str,
+    blocker: &str,
+    next_action: &str,
+) -> Result<(), String> {
+    fn none_if_blank(value: &str) -> Option<&str> {
+        let trimmed = value.trim();
+        (!trimmed.is_empty()).then_some(trimmed)
+    }
+    conn.execute(
+        "UPDATE focus_sessions SET result = ?2, blocker = ?3, next_action = ?4 WHERE id = ?1",
+        params![
+            session_id,
+            none_if_blank(result),
+            none_if_blank(blocker),
+            none_if_blank(next_action),
+        ],
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(())
+}
+
 /// The one-active-session invariant: never more than one non-terminal session.
 pub fn active_session_count(conn: &Connection) -> Result<i64, String> {
     conn.query_row(
@@ -327,6 +354,32 @@ mod tests {
         record_session(&conn, &recovered, 60, 62_000).unwrap();
         assert_eq!(list_recent(&conn, 10).unwrap().len(), 1); // one record, not two
         assert!(active_session(&conn).unwrap().is_none());
+    }
+
+    #[test]
+    fn save_debrief_attaches_fields_and_blanks_become_null() {
+        let conn = db::open(":memory:").unwrap();
+        let mut s = focusing_session();
+        s.complete().unwrap();
+        record_session(&conn, &s, 90, 100_000).unwrap();
+
+        save_debrief(&conn, "s1", "Shipped the parser", "   ", "Write tests").unwrap();
+
+        let (result, blocker, next): (Option<String>, Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT result, blocker, next_action FROM focus_sessions WHERE id = ?1",
+                params!["s1"],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(result.as_deref(), Some("Shipped the parser"));
+        assert_eq!(blocker, None); // whitespace-only -> NULL
+        assert_eq!(next.as_deref(), Some("Write tests"));
+        // The debrief must not disturb the finished row's outcome.
+        assert_eq!(
+            list_recent(&conn, 10).unwrap()[0].outcome.as_deref(),
+            Some("completed")
+        );
     }
 
     #[test]

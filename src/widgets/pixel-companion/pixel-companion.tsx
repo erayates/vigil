@@ -13,6 +13,7 @@ const stateFile: Record<FocusPhase, string> = {
   break: 'break',
   complete: 'complete',
   abandoned: 'idle',
+  debrief: 'complete',
 };
 
 export function PixelCompanion({ phase, size = 'large' }: PixelCompanionProps) {

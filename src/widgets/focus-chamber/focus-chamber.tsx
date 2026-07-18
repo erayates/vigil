@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { formatDuration } from '@/entities/focus-session/lib/time';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { nativeBridge } from '@/shared/lib/native-bridge';
+import { DebriefForm } from './debrief-form';
 
 function phaseCopy(phase: ReturnType<typeof useFocusStore.getState>['phase']): string {
   switch (phase) {
@@ -12,7 +13,11 @@ function phaseCopy(phase: ReturnType<typeof useFocusStore.getState>['phase']): s
     case 'paused':
       return 'Formation held. Resume when ready.';
     case 'complete':
-      return 'Watch complete. Record the result.';
+      return 'Watch complete. Debrief the result.';
+    case 'abandoned':
+      return 'Watch ended early. Log what happened.';
+    case 'debrief':
+      return 'Log the outcome and your next move.';
     default:
       return 'Define one mission, then hold the line.';
   }
@@ -29,6 +34,8 @@ export function FocusChamber() {
     resumeSession,
     resetSession,
     abandonSession,
+    openDebrief,
+    recordDebrief,
     tick,
   } = useFocusStore();
 
@@ -54,18 +61,22 @@ export function FocusChamber() {
       resumeSession();
       return;
     }
-    if (phase === 'complete') {
-      resetSession();
-      void nativeBridge.hideCompanion();
+    if (phase === 'complete' || phase === 'abandoned') {
+      openDebrief();
     }
   }
 
-  const primaryLabel = phase === 'paused' ? 'Resume' : phase === 'complete' ? 'Record' : 'Start';
+  const primaryLabel =
+    phase === 'paused'
+      ? 'Resume'
+      : phase === 'complete' || phase === 'abandoned'
+        ? 'Debrief'
+        : 'Start';
   const primaryDisabled =
     phase === 'preparing' ||
     phase === 'focusing' ||
     phase === 'break' ||
-    phase === 'abandoned' ||
+    phase === 'debrief' ||
     (phase === 'idle' && missionTitle.trim().length === 0);
 
   return (
@@ -103,58 +114,73 @@ export function FocusChamber() {
         <div style={{ width: `${elapsedPercent}%` }} />
       </div>
 
-      <div className="focus-controls">
-        <button
-          className="control-button control-button--start"
-          type="button"
-          disabled={primaryDisabled}
-          onClick={handlePrimaryAction}
-        >
-          <span className="control-icon" aria-hidden="true">
-            ▶
-          </span>
-          <strong>{primaryLabel}</strong>
-        </button>
-        <button
-          className="control-button control-button--pause"
-          type="button"
-          disabled={phase !== 'focusing'}
-          onClick={pauseSession}
-        >
-          <span className="control-icon" aria-hidden="true">
-            Ⅱ
-          </span>
-          <strong>Pause</strong>
-        </button>
-        <button
-          className="control-button control-button--reset"
-          type="button"
-          disabled={!['idle', 'complete', 'abandoned'].includes(phase)}
-          onClick={resetSession}
-        >
-          <span className="control-icon" aria-hidden="true">
-            ↻
-          </span>
-          <strong>Reset</strong>
-        </button>
-        <button
-          className="control-button control-button--skip"
-          type="button"
-          disabled
-          aria-label="Skip — available in v0.2.0"
-          title="Break skipping is introduced with the Doctrine flow in v0.2.0"
-        >
-          <span className="control-icon" aria-hidden="true">
-            ▶▶
-          </span>
-          <strong>Skip</strong>
-        </button>
-      </div>
+      {phase === 'debrief' ? (
+        <DebriefForm
+          onRecord={(fields) => {
+            recordDebrief(fields);
+            void nativeBridge.hideCompanion();
+          }}
+          onSkip={() => {
+            resetSession();
+            void nativeBridge.hideCompanion();
+          }}
+        />
+      ) : (
+        <>
+          <div className="focus-controls">
+            <button
+              className="control-button control-button--start"
+              type="button"
+              disabled={primaryDisabled}
+              onClick={handlePrimaryAction}
+            >
+              <span className="control-icon" aria-hidden="true">
+                ▶
+              </span>
+              <strong>{primaryLabel}</strong>
+            </button>
+            <button
+              className="control-button control-button--pause"
+              type="button"
+              disabled={phase !== 'focusing'}
+              onClick={pauseSession}
+            >
+              <span className="control-icon" aria-hidden="true">
+                Ⅱ
+              </span>
+              <strong>Pause</strong>
+            </button>
+            <button
+              className="control-button control-button--reset"
+              type="button"
+              disabled={!['idle', 'complete', 'abandoned'].includes(phase)}
+              onClick={resetSession}
+            >
+              <span className="control-icon" aria-hidden="true">
+                ↻
+              </span>
+              <strong>Reset</strong>
+            </button>
+            <button
+              className="control-button control-button--skip"
+              type="button"
+              disabled
+              aria-label="Skip — available in v0.2.0"
+              title="Break skipping is introduced with the Doctrine flow in v0.2.0"
+            >
+              <span className="control-icon" aria-hidden="true">
+                ▶▶
+              </span>
+              <strong>Skip</strong>
+            </button>
+          </div>
 
-      {(phase === 'focusing' || phase === 'paused') && (
-        <button className="abandon-watch" type="button" onClick={abandonSession}>
-          Abandon watch
-        </button>
+          {(phase === 'focusing' || phase === 'paused') && (
+            <button className="abandon-watch" type="button" onClick={abandonSession}>
+              Abandon watch
+            </button>
+          )}
+        </>
       )}
     </section>
   );

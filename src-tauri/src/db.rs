@@ -36,6 +36,11 @@ pub fn migrations() -> Migrations<'static> {
             "ALTER TABLE focus_sessions ADD COLUMN total_paused_ms INTEGER NOT NULL DEFAULT 0;
              ALTER TABLE focus_sessions ADD COLUMN pause_started_at_ms INTEGER;",
         ),
+        M::up(
+            "ALTER TABLE focus_sessions ADD COLUMN result TEXT;
+             ALTER TABLE focus_sessions ADD COLUMN blocker TEXT;
+             ALTER TABLE focus_sessions ADD COLUMN next_action TEXT;",
+        ),
     ])
 }
 

@@ -11,6 +11,7 @@ const messageByPhase = {
   break: 'Recovery is discipline.',
   complete: 'The watch is complete.',
   abandoned: 'Reform the line.',
+  debrief: 'Record the debrief.',
 } as const;
 
 export function CompanionStage() {
