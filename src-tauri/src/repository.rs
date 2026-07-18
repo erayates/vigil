@@ -354,6 +354,60 @@ pub fn doctrine_set(conn: &Connection, short: i64, long: i64) -> Result<Doctrine
     doctrine_get(conn)
 }
 
+/// Companion window preferences. side is "left"/"right"; scale and opacity are
+/// clamped to safe ranges so the companion can never become invisible or huge.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompanionPrefs {
+    pub side: String,
+    pub scale: f64,
+    pub opacity: f64,
+}
+
+fn normalize_side(side: &str) -> &'static str {
+    if side == "left" {
+        "left"
+    } else {
+        "right"
+    }
+}
+
+pub fn companion_prefs_get(conn: &Connection) -> Result<CompanionPrefs, String> {
+    let side = normalize_side(
+        &get_setting(conn, "companion_side")?.unwrap_or_else(|| "right".to_string()),
+    )
+    .to_string();
+    let scale = get_setting(conn, "companion_scale")?
+        .and_then(|value| value.parse::<f64>().ok())
+        .unwrap_or(1.0)
+        .clamp(0.5, 2.0);
+    let opacity = get_setting(conn, "companion_opacity")?
+        .and_then(|value| value.parse::<f64>().ok())
+        .unwrap_or(1.0)
+        .clamp(0.3, 1.0);
+    Ok(CompanionPrefs {
+        side,
+        scale,
+        opacity,
+    })
+}
+
+pub fn companion_prefs_set(
+    conn: &Connection,
+    side: &str,
+    scale: f64,
+    opacity: f64,
+) -> Result<CompanionPrefs, String> {
+    set_setting(conn, "companion_side", normalize_side(side))?;
+    set_setting(conn, "companion_scale", &scale.clamp(0.5, 2.0).to_string())?;
+    set_setting(
+        conn,
+        "companion_opacity",
+        &opacity.clamp(0.3, 1.0).to_string(),
+    )?;
+    companion_prefs_get(conn)
+}
+
 // ----- Local data export / import (VIGIL-022) -------------------------------
 
 pub const EXPORT_VERSION: i64 = 1;
@@ -948,5 +1002,30 @@ mod tests {
             settings: vec![],
         };
         assert!(import_data(&dst, &bundle).is_err());
+    }
+
+    #[test]
+    fn companion_prefs_default_then_persist_and_clamp() {
+        let conn = db::open(":memory:").unwrap();
+        let d = companion_prefs_get(&conn).unwrap();
+        assert_eq!(d.side, "right");
+        assert_eq!(d.scale, 1.0);
+        assert_eq!(d.opacity, 1.0);
+
+        let saved = companion_prefs_set(&conn, "left", 5.0, 0.0).unwrap();
+        assert_eq!(saved.side, "left");
+        assert_eq!(saved.scale, 2.0); // clamped from 5.0
+        assert_eq!(saved.opacity, 0.3); // clamped from 0.0
+                                        // Recovers on a fresh read.
+        let reread = companion_prefs_get(&conn).unwrap();
+        assert_eq!(reread.side, "left");
+        assert_eq!(reread.scale, 2.0);
+        assert_eq!(reread.opacity, 0.3);
+
+        // An unknown side normalizes to the default.
+        assert_eq!(
+            companion_prefs_set(&conn, "up", 1.0, 1.0).unwrap().side,
+            "right"
+        );
     }
 }

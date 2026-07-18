@@ -404,6 +404,54 @@ fn data_import(
     repository::import_data(&conn, &bundle)
 }
 
+/// Move the companion to the left or right edge of the primary monitor. Runtime
+/// window placement — best-effort, silently ignored if the window/monitor is gone.
+fn apply_companion_side(app: &tauri::AppHandle, side: &str) {
+    let Some(companion) = app.get_webview_window("companion") else {
+        return;
+    };
+    let (Ok(size), Ok(Some(monitor))) = (companion.outer_size(), companion.primary_monitor())
+    else {
+        return;
+    };
+    let mpos = monitor.position();
+    let msize = monitor.size();
+    let margin = 24_i32;
+    let x = if side == "left" {
+        mpos.x + margin
+    } else {
+        mpos.x + msize.width as i32 - size.width as i32 - margin
+    };
+    let _ = companion.set_position(tauri::PhysicalPosition::new(x, mpos.y + margin));
+}
+
+#[tauri::command]
+fn companion_prefs_get(
+    db: tauri::State<'_, Mutex<Connection>>,
+) -> Result<repository::CompanionPrefs, String> {
+    let conn = db.lock().unwrap();
+    repository::companion_prefs_get(&conn)
+}
+
+/// Persist companion preferences, reposition for the chosen side, and broadcast so
+/// the companion window applies scale/opacity live (no restart).
+#[tauri::command]
+fn companion_prefs_set(
+    app: tauri::AppHandle,
+    db: tauri::State<'_, Mutex<Connection>>,
+    side: String,
+    scale: f64,
+    opacity: f64,
+) -> Result<repository::CompanionPrefs, String> {
+    let prefs = {
+        let conn = db.lock().unwrap();
+        repository::companion_prefs_set(&conn, &side, scale, opacity)?
+    };
+    apply_companion_side(&app, &prefs.side);
+    let _ = app.emit("companion://prefs", &prefs);
+    Ok(prefs)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -482,7 +530,9 @@ pub fn run() {
             doctrine_get,
             doctrine_set,
             data_export,
-            data_import
+            data_import,
+            companion_prefs_get,
+            companion_prefs_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running VIGIL");

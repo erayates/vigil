@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatDuration } from '@/entities/focus-session/lib/time';
+import { useCompanionPrefsStore } from '@/features/companion/model/use-companion-prefs-store';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { nativeBridge } from '@/shared/lib/native-bridge';
 import { PixelCompanion } from '@/widgets/pixel-companion/pixel-companion';
@@ -16,17 +17,22 @@ export function CompanionOverlay() {
     completeSession,
     tick,
   } = useFocusStore();
+  const { scale, opacity } = useCompanionPrefsStore();
   const [clickThrough, setClickThrough] = useState(false);
 
   useEffect(() => {
-    if (phase !== 'focusing') return;
+    // Count down during both the focus watch and a break.
+    if (phase !== 'focusing' && phase !== 'break') return;
     tick();
     const intervalId = window.setInterval(() => tick(), 250);
     return () => window.clearInterval(intervalId);
   }, [phase, tick]);
 
   return (
-    <main className="overlay-root">
+    <main
+      className="overlay-root"
+      style={{ opacity, transform: `scale(${scale})`, transformOrigin: 'top center' }}
+    >
       <div className="overlay-card">
         <div className="drag-handle" data-tauri-drag-region>
           VIGIL

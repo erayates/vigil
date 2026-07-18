@@ -386,7 +386,7 @@ items:
   - id: VIGIL-021
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P2
     title: Add companion window preferences
     asset_dependencies:

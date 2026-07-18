@@ -55,7 +55,9 @@ test('keyboard tab order preserves visual meaning and skips disabled roadmap con
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Start' })).toBeEnabled();
 
-  const seq = await walkTabOrder(page, 20);
+  // The campaign board carries many controls (campaign, doctrine, companion,
+  // backup) before the focus chamber, so walk far enough to reach Start.
+  const seq = await walkTabOrder(page, 40);
   const keys = seq.map((e) => (e ? e.id || e.label || e.text : ''));
 
   const missionIdx = keys.findIndex((k) => k === 'mission-title');

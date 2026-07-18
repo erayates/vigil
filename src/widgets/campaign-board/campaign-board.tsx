@@ -1,6 +1,7 @@
 import { type ChangeEvent, useMemo, useRef, useState } from 'react';
 import { focusModes } from '@/entities/focus-session/model/modes';
 import { useCampaignStore } from '@/features/campaign/model/use-campaign-store';
+import { useCompanionPrefsStore } from '@/features/companion/model/use-companion-prefs-store';
 import { useDoctrineStore } from '@/features/doctrine/model/use-doctrine-store';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { dataBridge } from '@/shared/lib/data-bridge';
@@ -26,6 +27,12 @@ export function CampaignBoard() {
   } = useFocusStore();
   const { campaigns, activeId, createCampaign, setActiveCampaign } = useCampaignStore();
   const { shortBreakMinutes, longBreakMinutes, setDoctrine } = useDoctrineStore();
+  const {
+    side: companionSide,
+    scale: companionScale,
+    opacity: companionOpacity,
+    setPrefs: setCompanionPrefs,
+  } = useCompanionPrefsStore();
   const [priority, setPriority] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
   const [newCampaign, setNewCampaign] = useState('');
   const [addingCampaign, setAddingCampaign] = useState(false);
@@ -238,6 +245,51 @@ export function CampaignBoard() {
             defaultValue={longBreakMinutes}
             onBlur={(event) =>
               setDoctrine(shortBreakMinutes, Number(event.target.value) || longBreakMinutes)
+            }
+          />
+        </div>
+      </div>
+
+      <div className="companion-field">
+        <strong>Companion</strong>
+        <div className="companion-controls">
+          <label htmlFor="companion-side">Side</label>
+          <select
+            id="companion-side"
+            value={companionSide}
+            onChange={(event) =>
+              setCompanionPrefs(
+                event.target.value === 'left' ? 'left' : 'right',
+                companionScale,
+                companionOpacity,
+              )
+            }
+          >
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
+          <label htmlFor="companion-scale">Scale</label>
+          <input
+            id="companion-scale"
+            type="range"
+            min={0.5}
+            max={2}
+            step={0.1}
+            value={companionScale}
+            onChange={(event) =>
+              setCompanionPrefs(companionSide, Number(event.target.value), companionOpacity)
+            }
+          />
+          <label htmlFor="companion-opacity">Opacity</label>
+          <input
+            id="companion-opacity"
+            type="range"
+            min={0.3}
+            max={1}
+            step={0.1}
+            value={companionOpacity}
+            onChange={(event) =>
+              setCompanionPrefs(companionSide, companionScale, Number(event.target.value))
             }
           />
         </div>

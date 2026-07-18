@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { useCompanionPrefsStore } from '@/features/companion/model/use-companion-prefs-store';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { CompanionOverlay } from './companion-overlay';
 
@@ -47,5 +48,14 @@ describe('CompanionOverlay', () => {
     expect(screen.queryByRole('button', { name: 'Pause focus session' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Complete focus session' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Resume focus session' })).toBeNull();
+  });
+
+  it('applies the companion scale and opacity preferences', () => {
+    useCompanionPrefsStore.setState({ side: 'right', scale: 1.5, opacity: 0.6 });
+    const { container } = render(<CompanionOverlay />);
+
+    const root = container.querySelector('.overlay-root') as HTMLElement;
+    expect(root.style.opacity).toBe('0.6');
+    expect(root.style.transform).toBe('scale(1.5)');
   });
 });
