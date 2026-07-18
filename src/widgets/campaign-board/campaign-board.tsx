@@ -220,100 +220,104 @@ export function CampaignBoard() {
         <p className="formation-description">{activeMode?.description}</p>
       )}
 
-      <div className="doctrine-field">
-        <strong>Recovery doctrine</strong>
-        <div className="doctrine-inputs">
-          <label htmlFor="short-break">Short break (min)</label>
-          <input
-            key={`short-${shortBreakMinutes}`}
-            id="short-break"
-            type="number"
-            min={1}
-            max={120}
-            defaultValue={shortBreakMinutes}
-            onBlur={(event) =>
-              setDoctrine(Number(event.target.value) || shortBreakMinutes, longBreakMinutes)
-            }
-          />
-          <label htmlFor="long-break">Long break (min)</label>
-          <input
-            key={`long-${longBreakMinutes}`}
-            id="long-break"
-            type="number"
-            min={1}
-            max={120}
-            defaultValue={longBreakMinutes}
-            onBlur={(event) =>
-              setDoctrine(shortBreakMinutes, Number(event.target.value) || longBreakMinutes)
-            }
-          />
-        </div>
-      </div>
+      <details className="board-settings">
+        <summary>Settings &amp; preferences</summary>
 
-      <div className="companion-field">
-        <strong>Companion</strong>
-        <div className="companion-controls">
-          <label htmlFor="companion-side">Side</label>
-          <select
-            id="companion-side"
-            value={companionSide}
-            onChange={(event) =>
-              setCompanionPrefs(
-                event.target.value === 'left' ? 'left' : 'right',
-                companionScale,
-                companionOpacity,
-              )
-            }
-          >
-            <option value="left">Left</option>
-            <option value="right">Right</option>
-          </select>
-          <label htmlFor="companion-scale">Scale</label>
-          <input
-            id="companion-scale"
-            type="range"
-            min={0.5}
-            max={2}
-            step={0.1}
-            value={companionScale}
-            onChange={(event) =>
-              setCompanionPrefs(companionSide, Number(event.target.value), companionOpacity)
-            }
-          />
-          <label htmlFor="companion-opacity">Opacity</label>
-          <input
-            id="companion-opacity"
-            type="range"
-            min={0.3}
-            max={1}
-            step={0.1}
-            value={companionOpacity}
-            onChange={(event) =>
-              setCompanionPrefs(companionSide, companionScale, Number(event.target.value))
-            }
-          />
+        <div className="doctrine-field">
+          <strong>Recovery doctrine</strong>
+          <div className="doctrine-inputs">
+            <label htmlFor="short-break">Short break (min)</label>
+            <input
+              key={`short-${shortBreakMinutes}`}
+              id="short-break"
+              type="number"
+              min={1}
+              max={120}
+              defaultValue={shortBreakMinutes}
+              onBlur={(event) =>
+                setDoctrine(Number(event.target.value) || shortBreakMinutes, longBreakMinutes)
+              }
+            />
+            <label htmlFor="long-break">Long break (min)</label>
+            <input
+              key={`long-${longBreakMinutes}`}
+              id="long-break"
+              type="number"
+              min={1}
+              max={120}
+              defaultValue={longBreakMinutes}
+              onBlur={(event) =>
+                setDoctrine(shortBreakMinutes, Number(event.target.value) || longBreakMinutes)
+              }
+            />
+          </div>
         </div>
-      </div>
 
-      <div className="backup-field">
-        <strong>Local data</strong>
-        <div className="backup-actions">
-          <button type="button" onClick={handleExport}>
-            Export
-          </button>
-          <button type="button" onClick={() => importInputRef.current?.click()}>
-            Import
-          </button>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept="application/json"
-            className="sr-only"
-            aria-label="Import data file"
-            onChange={handleImportFile}
-          />
+        <div className="companion-field">
+          <strong>Companion</strong>
+          <div className="companion-controls">
+            <label htmlFor="companion-side">Side</label>
+            <select
+              id="companion-side"
+              value={companionSide}
+              onChange={(event) =>
+                setCompanionPrefs(
+                  event.target.value === 'left' ? 'left' : 'right',
+                  companionScale,
+                  companionOpacity,
+                )
+              }
+            >
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+            <label htmlFor="companion-scale">Scale</label>
+            <input
+              id="companion-scale"
+              type="range"
+              min={0.5}
+              max={2}
+              step={0.1}
+              value={companionScale}
+              onChange={(event) =>
+                setCompanionPrefs(companionSide, Number(event.target.value), companionOpacity)
+              }
+            />
+            <label htmlFor="companion-opacity">Opacity</label>
+            <input
+              id="companion-opacity"
+              type="range"
+              min={0.3}
+              max={1}
+              step={0.1}
+              value={companionOpacity}
+              onChange={(event) =>
+                setCompanionPrefs(companionSide, companionScale, Number(event.target.value))
+              }
+            />
+          </div>
         </div>
-      </div>
+
+        <div className="backup-field">
+          <strong>Local data</strong>
+          <div className="backup-actions">
+            <button type="button" onClick={handleExport}>
+              Export
+            </button>
+            <button type="button" onClick={() => importInputRef.current?.click()}>
+              Import
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json"
+              className="sr-only"
+              aria-label="Import data file"
+              onChange={handleImportFile}
+            />
+          </div>
+        </div>
+      </details>
 
       <footer className="campaign-board-footer">
         <button

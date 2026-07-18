@@ -3,7 +3,7 @@
   height: 100vh;
   min-height: 900px;
   display: grid;
-  grid-template-rows: 122px minmax(0, 1fr) 166px 34px;
+  grid-template-rows: 122px minmax(0, 1fr) 214px 34px;
   border: 8px solid transparent;
   border-image: url('/assets/ui/frames/outer-frame.png') 8 fill stretch;
   background:
@@ -181,9 +181,12 @@
 }
 
 .campaign-board {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   color: var(--ink);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .panel-ribbon,
@@ -348,6 +351,31 @@
 
 .campaign-selector button:hover {
   border-color: var(--bronze-500);
+}
+
+.board-settings > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 6px 2px;
+  border-top: 3px solid #6e5138;
+  color: var(--bronze-300);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #422012;
+}
+
+.board-settings > summary::-webkit-details-marker {
+  display: none;
+}
+
+.board-settings > summary::before {
+  content: '▸ ';
+}
+
+.board-settings[open] > summary::before {
+  content: '▾ ';
 }
 
 .doctrine-field {
@@ -568,11 +596,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 3px -5px 0;
+  margin: auto -5px 0;
   border-top: 3px solid #6e5138;
-  padding: 4px 10px 0;
+  padding: 6px 10px 4px;
   color: #6d271c;
-  transform: translateY(-9px);
   z-index: 2;
   text-transform: uppercase;
 }
@@ -598,10 +625,12 @@
 
 .focus-chamber {
   display: grid;
-  grid-template-rows: auto minmax(190px, 1fr) auto auto auto auto;
+  grid-template-rows: auto minmax(150px, 1fr) auto auto auto auto;
   align-items: center;
   color: var(--ink);
   text-align: center;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .focus-ribbon {
@@ -776,13 +805,13 @@
 
 .debrief-form {
   display: grid;
-  gap: 8px;
-  padding: 6px 2px 2px;
+  gap: 5px;
+  padding: 4px 2px 2px;
 }
 
 .debrief-form label {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   color: var(--bronze-300);
   font-size: 0.68rem;
   font-weight: 900;
@@ -793,7 +822,7 @@
 
 .debrief-form input {
   border: 3px solid #6c5038;
-  padding: 7px 10px;
+  padding: 5px 10px;
   color: var(--ink);
   background: rgba(243, 226, 188, 0.93);
   box-shadow: inset 0 0 0 2px #d3b989;
@@ -808,7 +837,7 @@
 }
 
 .debrief-actions .control-button {
-  min-height: 56px;
+  min-height: 42px;
 }
 
 .break-controls {
@@ -855,11 +884,14 @@
 }
 
 .companion-recall {
-  align-self: center;
-  margin-top: 8px;
+  position: absolute;
+  z-index: 5;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 4px 14px;
   border: 2px solid #4d382c;
-  background: #271c18;
+  background: rgba(39, 28, 24, 0.92);
   color: var(--bronze-300);
   font-size: 0.68rem;
   letter-spacing: 0.08em;
@@ -1050,8 +1082,8 @@
 
 .weekly-summary {
   grid-column: 1 / -1;
-  margin-top: 8px;
-  padding: 8px 12px 10px;
+  margin-top: 4px;
+  padding: 6px 12px 4px;
   color: #e6c990;
 }
 
@@ -1081,7 +1113,7 @@
   grid-template-columns: repeat(7, 1fr);
   align-items: end;
   gap: 6px;
-  height: 68px;
+  height: 44px;
 }
 
 .weekly-bar {
