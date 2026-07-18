@@ -179,7 +179,7 @@ items:
   - id: VIGIL-006
     phase: P1
     version: 0.1.0
-    status: planned
+    status: done
     priority: P0
     title: Synchronize companion state
     asset_dependencies:
