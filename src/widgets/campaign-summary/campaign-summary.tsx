@@ -16,7 +16,9 @@ export function CampaignSummary() {
       (record) => new Date(record.completedAtIso).toDateString() === today,
     );
     return {
-      todaySessions: todayRecords.length,
+      // Only completed watches count toward the daily campaign; abandoned ones
+      // still contributed focus time but are not victories.
+      todaySessions: todayRecords.filter((record) => record.outcome === 'completed').length,
       todaySeconds: todayRecords.reduce((sum, record) => sum + record.focusedDurationSeconds, 0),
       totalSeconds: history.reduce((sum, record) => sum + record.focusedDurationSeconds, 0),
     };

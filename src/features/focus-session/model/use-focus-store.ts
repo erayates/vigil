@@ -237,6 +237,7 @@ export async function initSessionSync(): Promise<void> {
   await refreshHistory();
   await sessionBridge.subscribe((next) => {
     useFocusStore.getState().applySnapshot(next);
-    void refreshHistory();
+    // History only changes when a session ends; skip the DB read otherwise.
+    if (next.phase === 'complete' || next.phase === 'abandoned') void refreshHistory();
   });
 }
