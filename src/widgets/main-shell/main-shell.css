@@ -350,6 +350,44 @@
   border-color: var(--bronze-500);
 }
 
+.doctrine-field {
+  display: grid;
+  gap: 6px;
+  padding: 6px 2px 2px;
+}
+
+.doctrine-field > strong {
+  color: var(--bronze-300);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 #422012;
+}
+
+.doctrine-inputs {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.doctrine-inputs label {
+  color: #6c5038;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.doctrine-inputs input {
+  width: 72px;
+  border: 3px solid #6c5038;
+  padding: 5px 8px;
+  color: var(--ink);
+  background: rgba(243, 226, 188, 0.93);
+  box-shadow: inset 0 0 0 2px #d3b989;
+  font-size: 0.74rem;
+}
+
 .victory-field {
   display: grid;
   gap: 5px;
@@ -695,6 +733,49 @@
 
 .debrief-actions .control-button {
   min-height: 56px;
+}
+
+.break-controls {
+  display: grid;
+  margin: 8px -8px -8px;
+  border-top: 9px solid #1d1815;
+  padding: 12px 10px;
+  background: #28211e;
+  box-shadow: inset 0 3px 0 #594335;
+}
+
+.break-controls .control-button {
+  min-height: 72px;
+}
+
+.break-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.break-offer span {
+  color: var(--bronze-300);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.break-offer button {
+  border: 2px solid #4d382c;
+  background: #271c18;
+  color: var(--bronze-300);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+}
+
+.break-offer button:hover {
+  border-color: var(--bronze-500);
 }
 
 .companion-recall {

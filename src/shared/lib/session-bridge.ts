@@ -3,7 +3,16 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { z } from 'zod';
 
 const sessionSnapshotSchema = z.object({
-  phase: z.enum(['idle', 'preparing', 'focusing', 'paused', 'complete', 'abandoned', 'debrief']),
+  phase: z.enum([
+    'idle',
+    'preparing',
+    'focusing',
+    'paused',
+    'break',
+    'complete',
+    'abandoned',
+    'debrief',
+  ]),
   missionTitle: z.string(),
   victoryCondition: z.string(),
   plannedDurationSecs: z.number(),
@@ -67,6 +76,8 @@ export const sessionBridge = {
   complete: () => call('session_complete'),
   openDebrief: () => call('session_open_debrief'),
   record: (fields: DebriefFields) => call('session_record', { ...fields }),
+  startBreak: (plannedDurationSecs: number) => call('session_start_break', { plannedDurationSecs }),
+  endBreak: () => call('session_end_break'),
   reset: () => call('session_reset'),
   history: async (): Promise<HistoryRecordDto[]> => {
     if (!isTauriRuntime()) return [];

@@ -64,4 +64,17 @@ describe('FocusChamber debrief flow', () => {
     expect(state.history[0]?.result).toBeUndefined();
     expect(hide).toHaveBeenCalled();
   });
+
+  it('ends a running break back to idle', () => {
+    useFocusStore.setState({
+      phase: 'break',
+      startedAtMs: Date.now(),
+      plannedDurationSeconds: 300,
+      remainingSeconds: 300,
+    });
+    render(<FocusChamber />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'End break' }));
+    expect(useFocusStore.getState().phase).toBe('idle');
+  });
 });

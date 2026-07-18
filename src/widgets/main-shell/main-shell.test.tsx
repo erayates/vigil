@@ -59,10 +59,18 @@ describe('MainShell', () => {
   it('names the target version on disabled roadmap controls', () => {
     render(<MainShell />);
 
-    for (const name of [/Short Break.*v0\.2\.0/i, /Settings.*v0\.2\.0/i, /Skip.*v0\.2\.0/i]) {
+    for (const name of [/Statistics.*v0\.2\.0/i, /Settings.*v0\.2\.0/i, /Skip.*v0\.2\.0/i]) {
       const control = screen.getByRole('button', { name });
       expect(control).toBeDisabled();
     }
+  });
+
+  it('starts a recovery break from the header break tab', () => {
+    render(<MainShell />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Short Break' }));
+
+    expect(useFocusStore.getState().phase).toBe('break');
   });
 
   it('offers an abandon control during a session that grants no completed record', () => {

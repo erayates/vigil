@@ -1,3 +1,5 @@
+import { useDoctrineStore } from '@/features/doctrine/model/use-doctrine-store';
+import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { nativeBridge } from '@/shared/lib/native-bridge';
 import { CampaignBoard } from '@/widgets/campaign-board/campaign-board';
 import { CampaignSummary } from '@/widgets/campaign-summary/campaign-summary';
@@ -6,6 +8,16 @@ import { FocusChamber } from '@/widgets/focus-chamber/focus-chamber';
 import './main-shell.css';
 
 export function MainShell() {
+  const { phase, startBreak } = useFocusStore();
+  const { shortBreakMinutes, longBreakMinutes } = useDoctrineStore();
+  // Rest belongs between watches, so breaks start only when idle or just finished.
+  const breakAvailable = phase === 'idle' || phase === 'complete';
+
+  function takeBreak(minutes: number) {
+    startBreak(minutes * 60);
+    void nativeBridge.showCompanion();
+  }
+
   return (
     <div className="imperium-shell">
       <header className="imperium-header">
@@ -24,16 +36,21 @@ export function MainShell() {
         </div>
 
         <nav className="session-tabs" aria-label="Session mode">
-          <button className="session-tab is-active" type="button" aria-current="page">
+          <button
+            className={phase === 'break' ? 'session-tab' : 'session-tab is-active'}
+            type="button"
+            aria-current={phase === 'break' ? undefined : 'page'}
+          >
             <span aria-hidden="true">❧</span>
             <strong>Focus</strong>
           </button>
           <button
-            className="session-tab"
+            className={phase === 'break' ? 'session-tab is-active' : 'session-tab'}
             type="button"
-            disabled
-            aria-label="Short Break — available in v0.2.0"
-            title="Short break arrives in v0.2.0"
+            disabled={!breakAvailable}
+            aria-label="Short Break"
+            title={`Take a ${shortBreakMinutes}-minute short break`}
+            onClick={() => takeBreak(shortBreakMinutes)}
           >
             <span aria-hidden="true">☕</span>
             <strong>Short Break</strong>
@@ -41,9 +58,10 @@ export function MainShell() {
           <button
             className="session-tab"
             type="button"
-            disabled
-            aria-label="Long Break — available in v0.2.0"
-            title="Long break arrives in v0.2.0"
+            disabled={!breakAvailable}
+            aria-label="Long Break"
+            title={`Take a ${longBreakMinutes}-minute long break`}
+            onClick={() => takeBreak(longBreakMinutes)}
           >
             <span aria-hidden="true">⌂</span>
             <strong>Long Break</strong>

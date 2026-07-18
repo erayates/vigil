@@ -36,6 +36,8 @@ interface FocusState {
   abandonSession: () => void;
   openDebrief: () => void;
   recordDebrief: (fields: DebriefFields) => void;
+  startBreak: (plannedDurationSecs: number) => void;
+  endBreak: () => void;
   resetSession: () => void;
 }
 
@@ -141,9 +143,12 @@ export const useFocusStore = create<FocusState>()(
           totalPausedMs: state.totalPausedMs + additionalPauseMs,
         });
       },
+      // Drives both the focus countdown and the break countdown from the
+      // authoritative startedAt; each ends itself when it reaches zero.
       tick: (nowMs = Date.now()) => {
         const state = get();
-        if (state.phase !== 'focusing' || state.startedAtMs === null) return;
+        if (state.startedAtMs === null) return;
+        if (state.phase !== 'focusing' && state.phase !== 'break') return;
         const remainingSeconds = calculateRemainingSeconds({
           plannedDurationSeconds: state.plannedDurationSeconds,
           startedAtMs: state.startedAtMs,
@@ -152,7 +157,8 @@ export const useFocusStore = create<FocusState>()(
         });
         if (remainingSeconds === 0) {
           set({ remainingSeconds: 0 });
-          get().completeSession();
+          if (state.phase === 'focusing') get().completeSession();
+          else get().endBreak();
           return;
         }
         set({ remainingSeconds });
@@ -225,6 +231,42 @@ export const useFocusStore = create<FocusState>()(
           history,
           remainingSeconds: plannedDurationSeconds,
           plannedDurationSeconds,
+          startedAtMs: null,
+          pauseStartedAtMs: null,
+          totalPausedMs: 0,
+        });
+      },
+      // START_BREAK — optional recovery between watches (idle or just finished).
+      startBreak: (plannedDurationSecs) => {
+        const { phase } = get();
+        if (phase !== 'idle' && phase !== 'complete') return;
+        if (isTauriRuntime()) {
+          void sessionBridge.startBreak(plannedDurationSecs);
+          return;
+        }
+        set({
+          phase: 'break',
+          plannedDurationSeconds: plannedDurationSecs,
+          remainingSeconds: plannedDurationSecs,
+          startedAtMs: Date.now(),
+          pauseStartedAtMs: null,
+          totalPausedMs: 0,
+          missionTitle: '',
+          victoryCondition: '',
+        });
+      },
+      endBreak: () => {
+        const state = get();
+        if (state.phase !== 'break') return;
+        if (isTauriRuntime()) {
+          void sessionBridge.endBreak();
+          return;
+        }
+        const plannedDurationSeconds = durationFor(state.modeId, state.customDurationMinutes);
+        set({
+          phase: 'idle',
+          plannedDurationSeconds,
+          remainingSeconds: plannedDurationSeconds,
           startedAtMs: null,
           pauseStartedAtMs: null,
           totalPausedMs: 0,

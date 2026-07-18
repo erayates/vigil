@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { focusModes } from '@/entities/focus-session/model/modes';
 import { useCampaignStore } from '@/features/campaign/model/use-campaign-store';
+import { useDoctrineStore } from '@/features/doctrine/model/use-doctrine-store';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 
 const queuedOrders = [
@@ -22,6 +23,7 @@ export function CampaignBoard() {
     setCustomDurationMinutes,
   } = useFocusStore();
   const { campaigns, activeId, createCampaign, setActiveCampaign } = useCampaignStore();
+  const { shortBreakMinutes, longBreakMinutes, setDoctrine } = useDoctrineStore();
   const [priority, setPriority] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
   const [newCampaign, setNewCampaign] = useState('');
   const [addingCampaign, setAddingCampaign] = useState(false);
@@ -186,6 +188,36 @@ export function CampaignBoard() {
       ) : (
         <p className="formation-description">{activeMode?.description}</p>
       )}
+
+      <div className="doctrine-field">
+        <strong>Recovery doctrine</strong>
+        <div className="doctrine-inputs">
+          <label htmlFor="short-break">Short break (min)</label>
+          <input
+            key={`short-${shortBreakMinutes}`}
+            id="short-break"
+            type="number"
+            min={1}
+            max={120}
+            defaultValue={shortBreakMinutes}
+            onBlur={(event) =>
+              setDoctrine(Number(event.target.value) || shortBreakMinutes, longBreakMinutes)
+            }
+          />
+          <label htmlFor="long-break">Long break (min)</label>
+          <input
+            key={`long-${longBreakMinutes}`}
+            id="long-break"
+            type="number"
+            min={1}
+            max={120}
+            defaultValue={longBreakMinutes}
+            onBlur={(event) =>
+              setDoctrine(shortBreakMinutes, Number(event.target.value) || longBreakMinutes)
+            }
+          />
+        </div>
+      </div>
 
       <footer className="campaign-board-footer">
         <button

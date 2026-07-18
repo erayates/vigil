@@ -10,6 +10,7 @@ pub enum Phase {
     Complete,
     Abandoned,
     Debrief,
+    Break,
 }
 
 impl Phase {
@@ -22,6 +23,7 @@ impl Phase {
             Phase::Complete => "complete",
             Phase::Abandoned => "abandoned",
             Phase::Debrief => "debrief",
+            Phase::Break => "break",
         }
     }
 
@@ -87,7 +89,10 @@ impl SessionState {
         victory: String,
         planned_secs: u64,
     ) -> Result<(), SessionError> {
-        if !matches!(self.phase, Phase::Idle | Phase::Complete | Phase::Abandoned) {
+        if !matches!(
+            self.phase,
+            Phase::Idle | Phase::Complete | Phase::Abandoned | Phase::Break
+        ) {
             return Err(SessionError::InvalidTransition);
         }
         self.id = Some(id);
@@ -179,6 +184,30 @@ impl SessionState {
     /// debrief fields to the finished row before calling this.
     pub fn record(&mut self) -> Result<(), SessionError> {
         if self.phase != Phase::Debrief {
+            return Err(SessionError::InvalidTransition);
+        }
+        *self = SessionState::idle();
+        Ok(())
+    }
+
+    /// START_BREAK — take an optional recovery break after a completed watch. The
+    /// finished session is already persisted; the break carries no mission and is
+    /// never recorded. Never forced — the UI only offers it.
+    pub fn start_break(&mut self, now_ms: i64, break_secs: u64) -> Result<(), SessionError> {
+        // Rest belongs between watches, not during one.
+        if !matches!(self.phase, Phase::Idle | Phase::Complete) {
+            return Err(SessionError::InvalidTransition);
+        }
+        *self = SessionState::idle();
+        self.phase = Phase::Break;
+        self.planned_duration_secs = break_secs;
+        self.started_at_ms = Some(now_ms);
+        Ok(())
+    }
+
+    /// END_BREAK — the break elapsed or was skipped; return to Idle.
+    pub fn end_break(&mut self) -> Result<(), SessionError> {
+        if self.phase != Phase::Break {
             return Err(SessionError::InvalidTransition);
         }
         *self = SessionState::idle();
@@ -414,6 +443,57 @@ mod tests {
         let mut s = started();
         s.complete().unwrap();
         assert!(matches!(s.record(), Err(SessionError::InvalidTransition)));
+    }
+
+    #[test]
+    fn start_break_from_complete_runs_a_timer_without_a_mission() {
+        let mut s = started();
+        s.complete().unwrap();
+        s.start_break(1_000_000, 300).unwrap();
+        assert_eq!(s.phase, Phase::Break);
+        assert_eq!(s.id, None); // a break carries no mission
+        assert_eq!(s.remaining_secs(1_060_000), 240); // 60s into a 300s break
+    }
+
+    #[test]
+    fn start_break_allowed_from_idle_but_not_during_a_watch() {
+        let mut idle = SessionState::idle();
+        assert!(idle.start_break(0, 300).is_ok());
+        // Not while a watch is running.
+        let mut focusing = started();
+        assert!(matches!(
+            focusing.start_break(0, 300),
+            Err(SessionError::InvalidTransition)
+        ));
+    }
+
+    #[test]
+    fn end_break_returns_to_idle() {
+        let mut s = started();
+        s.complete().unwrap();
+        s.start_break(0, 300).unwrap();
+        s.end_break().unwrap();
+        assert_eq!(s.phase, Phase::Idle);
+    }
+
+    #[test]
+    fn end_break_rejected_unless_breaking() {
+        let mut s = SessionState::idle();
+        assert!(matches!(
+            s.end_break(),
+            Err(SessionError::InvalidTransition)
+        ));
+    }
+
+    #[test]
+    fn a_watch_can_start_straight_from_a_break() {
+        let mut s = started();
+        s.complete().unwrap();
+        s.start_break(0, 300).unwrap();
+        assert!(s
+            .start("a".into(), "b".into(), "m".into(), String::new(), 900)
+            .is_ok());
+        assert_eq!(s.phase, Phase::Preparing);
     }
 
     #[test]

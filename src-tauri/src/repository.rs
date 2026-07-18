@@ -258,27 +258,36 @@ pub struct CampaignSnapshot {
     pub active_id: String,
 }
 
-/// The active campaign id (new missions attribute here). Falls back to the seeded
-/// 'default' campaign if the setting is somehow absent.
-pub fn active_campaign_id(conn: &Connection) -> Result<String, String> {
+/// Generic key/value settings access. Backs the active campaign, Doctrine
+/// preferences and any future single-value preference.
+pub fn get_setting(conn: &Connection, key: &str) -> Result<Option<String>, String> {
     conn.query_row(
-        "SELECT value FROM settings WHERE key = 'active_campaign_id'",
-        [],
+        "SELECT value FROM settings WHERE key = ?1",
+        params![key],
         |row| row.get(0),
     )
     .optional()
-    .map(|value| value.unwrap_or_else(|| "default".to_string()))
     .map_err(|error| error.to_string())
 }
 
-pub fn set_active_campaign(conn: &Connection, id: &str) -> Result<(), String> {
+pub fn set_setting(conn: &Connection, key: &str, value: &str) -> Result<(), String> {
     conn.execute(
-        "INSERT INTO settings (key, value) VALUES ('active_campaign_id', ?1)
+        "INSERT INTO settings (key, value) VALUES (?1, ?2)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-        params![id],
+        params![key, value],
     )
     .map_err(|error| error.to_string())?;
     Ok(())
+}
+
+/// The active campaign id (new missions attribute here). Falls back to the seeded
+/// 'default' campaign if the setting is somehow absent.
+pub fn active_campaign_id(conn: &Connection) -> Result<String, String> {
+    Ok(get_setting(conn, "active_campaign_id")?.unwrap_or_else(|| "default".to_string()))
+}
+
+pub fn set_active_campaign(conn: &Connection, id: &str) -> Result<(), String> {
+    set_setting(conn, "active_campaign_id", id)
 }
 
 pub fn create_campaign(conn: &Connection, id: &str, name: &str, now_ms: i64) -> Result<(), String> {
@@ -312,6 +321,37 @@ pub fn campaign_snapshot(conn: &Connection) -> Result<CampaignSnapshot, String> 
         campaigns: list_campaigns(conn)?,
         active_id: active_campaign_id(conn)?,
     })
+}
+
+/// User-configurable work and recovery rules. v0.2.0 covers break lengths.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Doctrine {
+    pub short_break_minutes: i64,
+    pub long_break_minutes: i64,
+}
+
+fn minutes_setting(conn: &Connection, key: &str, default: i64) -> Result<i64, String> {
+    Ok(get_setting(conn, key)?
+        .and_then(|value| value.parse::<i64>().ok())
+        .filter(|minutes| *minutes >= 1)
+        .unwrap_or(default))
+}
+
+pub fn doctrine_get(conn: &Connection) -> Result<Doctrine, String> {
+    Ok(Doctrine {
+        short_break_minutes: minutes_setting(conn, "short_break_minutes", 5)?,
+        long_break_minutes: minutes_setting(conn, "long_break_minutes", 15)?,
+    })
+}
+
+/// Persist break lengths, clamped to a sane range, and return the stored Doctrine.
+pub fn doctrine_set(conn: &Connection, short: i64, long: i64) -> Result<Doctrine, String> {
+    let short = short.clamp(1, 120);
+    let long = long.clamp(1, 120);
+    set_setting(conn, "short_break_minutes", &short.to_string())?;
+    set_setting(conn, "long_break_minutes", &long.to_string())?;
+    doctrine_get(conn)
 }
 
 #[cfg(test)]
@@ -531,5 +571,41 @@ mod tests {
             )
             .unwrap();
         assert_eq!(campaign_id, "default");
+    }
+
+    #[test]
+    fn doctrine_defaults_then_persists() {
+        let conn = db::open(":memory:").unwrap();
+        let d = doctrine_get(&conn).unwrap();
+        assert_eq!(d.short_break_minutes, 5);
+        assert_eq!(d.long_break_minutes, 15);
+
+        let saved = doctrine_set(&conn, 3, 20).unwrap();
+        assert_eq!(saved.short_break_minutes, 3);
+        assert_eq!(saved.long_break_minutes, 20);
+        assert_eq!(doctrine_get(&conn).unwrap().short_break_minutes, 3);
+    }
+
+    #[test]
+    fn doctrine_clamps_out_of_range_values() {
+        let conn = db::open(":memory:").unwrap();
+        let saved = doctrine_set(&conn, 0, 999).unwrap();
+        assert_eq!(saved.short_break_minutes, 1);
+        assert_eq!(saved.long_break_minutes, 120);
+    }
+
+    #[test]
+    fn doctrine_survives_reopening_the_database() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("vigil.db");
+        let path_str = path.to_str().unwrap();
+        {
+            let conn = db::open(path_str).unwrap();
+            doctrine_set(&conn, 7, 30).unwrap();
+        }
+        let conn = db::open(path_str).unwrap();
+        let d = doctrine_get(&conn).unwrap();
+        assert_eq!(d.short_break_minutes, 7);
+        assert_eq!(d.long_break_minutes, 30);
     }
 }

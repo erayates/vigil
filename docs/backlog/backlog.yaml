@@ -302,7 +302,7 @@ items:
   - id: VIGIL-015
     phase: P2
     version: 0.2.0
-    status: planned
+    status: done
     priority: P1
     title: Add break state and Doctrine preferences
     asset_dependencies:

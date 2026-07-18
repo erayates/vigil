@@ -18,6 +18,8 @@ function phaseCopy(phase: ReturnType<typeof useFocusStore.getState>['phase']): s
       return 'Watch ended early. Log what happened.';
     case 'debrief':
       return 'Log the outcome and your next move.';
+    case 'break':
+      return 'On a break. Recover, then return.';
     default:
       return 'Define one mission, then hold the line.';
   }
@@ -36,11 +38,12 @@ export function FocusChamber() {
     abandonSession,
     openDebrief,
     recordDebrief,
+    endBreak,
     tick,
   } = useFocusStore();
 
   useEffect(() => {
-    if (phase !== 'focusing') return;
+    if (phase !== 'focusing' && phase !== 'break') return;
     tick();
     const intervalId = window.setInterval(() => tick(), 250);
     return () => window.clearInterval(intervalId);
@@ -125,6 +128,22 @@ export function FocusChamber() {
             void nativeBridge.hideCompanion();
           }}
         />
+      ) : phase === 'break' ? (
+        <div className="break-controls">
+          <button
+            className="control-button control-button--start"
+            type="button"
+            onClick={() => {
+              endBreak();
+              void nativeBridge.hideCompanion();
+            }}
+          >
+            <span className="control-icon" aria-hidden="true">
+              ✔
+            </span>
+            <strong>End break</strong>
+          </button>
+        </div>
       ) : (
         <>
           <div className="focus-controls">

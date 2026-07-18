@@ -292,6 +292,43 @@ fn session_record(
     Ok(snapshot)
 }
 
+/// START_BREAK — begin an optional recovery break of `planned_duration_secs`.
+/// A break carries no mission and is not persisted, so no `persist` call here.
+#[tauri::command]
+fn session_start_break(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+    planned_duration_secs: u64,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .start_break(now, planned_duration_secs)
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
+#[tauri::command]
+fn session_end_break(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .end_break()
+            .map_err(|_| "invalid transition".to_string())?;
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
 #[tauri::command]
 fn session_history(
     db: tauri::State<'_, Mutex<Connection>>,
@@ -329,6 +366,22 @@ fn campaign_set_active(
     let conn = db.lock().unwrap();
     repository::set_active_campaign(&conn, &id)?;
     repository::campaign_snapshot(&conn)
+}
+
+#[tauri::command]
+fn doctrine_get(db: tauri::State<'_, Mutex<Connection>>) -> Result<repository::Doctrine, String> {
+    let conn = db.lock().unwrap();
+    repository::doctrine_get(&conn)
+}
+
+#[tauri::command]
+fn doctrine_set(
+    db: tauri::State<'_, Mutex<Connection>>,
+    short_break_minutes: i64,
+    long_break_minutes: i64,
+) -> Result<repository::Doctrine, String> {
+    let conn = db.lock().unwrap();
+    repository::doctrine_set(&conn, short_break_minutes, long_break_minutes)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -401,9 +454,13 @@ pub fn run() {
             session_open_debrief,
             session_record,
             session_history,
+            session_start_break,
+            session_end_break,
             campaign_get,
             campaign_create,
-            campaign_set_active
+            campaign_set_active,
+            doctrine_get,
+            doctrine_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running VIGIL");
