@@ -270,3 +270,157 @@ items:
       - Five complete sessions observed.
       - Findings and severity are documented.
       - P0/P1 findings are resolved or release-blocking.
+
+  - id: VIGIL-013
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P1
+    title: Implement the debrief flow
+    asset_dependencies:
+      - NONE
+    objective: After a watch ends, capture result, blocker and next action, then record it.
+    acceptance:
+      - Complete and abandoned sessions can open a debrief before returning to idle.
+      - Result, blocker and next action persist with the session record.
+      - Debrief is skippable and adds under 20 seconds median closure time.
+
+  - id: VIGIL-014
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P1
+    title: Add campaign entity and mission attribution
+    asset_dependencies:
+      - NONE
+    objective: Group missions under a persistent campaign so focus time attributes to a goal.
+    acceptance:
+      - Sessions attribute to a campaign via migration-backed tables.
+      - The active campaign survives restart.
+      - Existing session records migrate without loss.
+
+  - id: VIGIL-015
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P1
+    title: Add break state and Doctrine preferences
+    asset_dependencies:
+      - NONE
+    objective: Offer optional short and long breaks after focus per user Doctrine settings.
+    acceptance:
+      - Break is a first-class state in the session machine.
+      - Doctrine preferences persist and recover.
+      - Breaks are never forced; skipping is always available.
+
+  - id: VIGIL-016
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P2
+    title: Add weekly local summary
+    asset_dependencies:
+      - NONE
+    objective: Show focus time and completed watches across the last seven days, locally.
+    acceptance:
+      - Weekly totals derive from persisted records.
+      - No network or account is used.
+      - Empty and partial weeks render without error.
+
+  - id: VIGIL-017
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P1
+    title: Add system tray behavior
+    asset_dependencies:
+      - SCAFFOLD-BRAND-001
+    objective: Provide a tray icon and menu to show/hide the companion and disable click-through.
+    acceptance:
+      - Tray menu shows/hides the companion and disables click-through (closes VIGIL-009's deferred mechanism).
+      - Closing the main window keeps the app in the tray per preference.
+      - A capability and ADR cover the tray.
+
+  - id: VIGIL-018
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P2
+    title: Add a global shortcut
+    asset_dependencies:
+      - NONE
+    objective: Bind a global shortcut to start/pause and to recover companion interaction.
+    acceptance:
+      - The shortcut works when the app is unfocused.
+      - Missing or conflicting shortcut permission fails gracefully.
+      - The plugin has a least-privilege capability and an ADR.
+
+  - id: VIGIL-019
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P2
+    title: Add native completion notification
+    asset_dependencies:
+      - NONE
+    objective: Notify the user when a watch completes, even if the app is unfocused.
+    acceptance:
+      - Completion fires exactly one native notification.
+      - Denied notification permission fails gracefully.
+      - The plugin has a capability and an ADR.
+
+  - id: VIGIL-020
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P2
+    title: Add autostart preference
+    asset_dependencies:
+      - NONE
+    objective: Let the user opt into launching VIGIL at login.
+    acceptance:
+      - Autostart is off by default and user-toggled.
+      - The preference persists and recovers.
+      - The plugin has a capability and an ADR.
+
+  - id: VIGIL-021
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P2
+    title: Add companion window preferences
+    asset_dependencies:
+      - NONE
+    objective: Let the user set companion side, scale and opacity.
+    acceptance:
+      - Side, scale and opacity persist and recover.
+      - Changes apply without a restart.
+      - Preferences clamp to safe ranges.
+
+  - id: VIGIL-022
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P1
+    title: Add local data export and import
+    asset_dependencies:
+      - NONE
+    objective: Let the user export and re-import local data for backup and portability.
+    acceptance:
+      - Export produces a user-initiated, documented file.
+      - Import validates and merges without corrupting existing data.
+      - A round-trip preserves all records.
+
+  - id: VIGIL-023
+    phase: P2
+    version: 0.2.0
+    status: planned
+    priority: P1
+    title: Seven-day dogfood run
+    asset_dependencies:
+      - NONE
+    objective: Use VIGIL daily for seven days to validate the daily-use alpha.
+    acceptance:
+      - Seven-day run completes without data loss.
+      - Preferences recover correctly across restarts.
+      - No P0 defects remain.
