@@ -380,6 +380,28 @@ pub fn close_to_tray(conn: &Connection) -> Result<bool, String> {
         .unwrap_or(false))
 }
 
+/// Recovery Days: dates (YYYY-MM-DD) the user marked as planned rest. Stored as a
+/// JSON array in settings so they persist, recover and travel in the export bundle.
+pub fn recovery_days(conn: &Connection) -> Result<Vec<String>, String> {
+    Ok(get_setting(conn, "recovery_days")?
+        .and_then(|value| serde_json::from_str::<Vec<String>>(&value).ok())
+        .unwrap_or_default())
+}
+
+/// Toggle a date's recovery status; returns the updated list. Never forced — only
+/// the user calls this.
+pub fn toggle_recovery_day(conn: &Connection, date: &str) -> Result<Vec<String>, String> {
+    let mut days = recovery_days(conn)?;
+    if let Some(pos) = days.iter().position(|day| day == date) {
+        days.remove(pos);
+    } else {
+        days.push(date.to_string());
+    }
+    let json = serde_json::to_string(&days).map_err(|error| error.to_string())?;
+    set_setting(conn, "recovery_days", &json)?;
+    Ok(days)
+}
+
 // ----- Local data export / import (VIGIL-022) -------------------------------
 
 pub const EXPORT_VERSION: i64 = 1;
@@ -1009,5 +1031,27 @@ mod tests {
         assert!(close_to_tray(&conn).unwrap());
         set_setting(&conn, "close_to_tray", "false").unwrap();
         assert!(!close_to_tray(&conn).unwrap());
+    }
+
+    #[test]
+    fn recovery_days_toggle_on_and_off_and_persist() {
+        let conn = db::open(":memory:").unwrap();
+        assert!(recovery_days(&conn).unwrap().is_empty());
+        assert_eq!(
+            toggle_recovery_day(&conn, "2026-07-18").unwrap(),
+            vec!["2026-07-18"]
+        );
+        // Persisted read.
+        assert_eq!(recovery_days(&conn).unwrap(), vec!["2026-07-18"]);
+        // A second date accumulates.
+        assert_eq!(
+            toggle_recovery_day(&conn, "2026-07-19").unwrap(),
+            vec!["2026-07-18", "2026-07-19"]
+        );
+        // Toggling off removes just that date.
+        assert_eq!(
+            toggle_recovery_day(&conn, "2026-07-18").unwrap(),
+            vec!["2026-07-19"]
+        );
     }
 }

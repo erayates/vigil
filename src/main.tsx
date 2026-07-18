@@ -5,6 +5,7 @@ import { initCampaignSync } from '@/features/campaign/model/use-campaign-store';
 import { initCompanionPrefsSync } from '@/features/companion/model/use-companion-prefs-store';
 import { initDoctrineSync } from '@/features/doctrine/model/use-doctrine-store';
 import { initSessionSync } from '@/features/focus-session/model/use-focus-store';
+import { initRecoverySync } from '@/features/progression/model/use-recovery-store';
 import '@/app/styles/global.css';
 
 const root = document.getElementById('root');
@@ -24,3 +25,4 @@ void initSessionSync();
 void initCampaignSync();
 void initDoctrineSync();
 void initCompanionPrefsSync();
+void initRecoverySync();

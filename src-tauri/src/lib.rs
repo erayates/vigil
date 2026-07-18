@@ -598,6 +598,21 @@ fn setup_tray(app: &tauri::AppHandle, close_to_tray_enabled: bool) -> tauri::Res
     Ok(())
 }
 
+#[tauri::command]
+fn recovery_days_get(db: tauri::State<'_, Mutex<Connection>>) -> Result<Vec<String>, String> {
+    let conn = db.lock().unwrap();
+    repository::recovery_days(&conn)
+}
+
+#[tauri::command]
+fn recovery_day_toggle(
+    db: tauri::State<'_, Mutex<Connection>>,
+    date: String,
+) -> Result<Vec<String>, String> {
+    let conn = db.lock().unwrap();
+    repository::toggle_recovery_day(&conn, &date)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -720,7 +735,9 @@ pub fn run() {
             data_export,
             data_import,
             companion_prefs_get,
-            companion_prefs_set
+            companion_prefs_set,
+            recovery_days_get,
+            recovery_day_toggle
         ])
         .run(tauri::generate_context!())
         .expect("error while running VIGIL");

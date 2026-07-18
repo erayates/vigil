@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionRecord } from '@/entities/focus-session/model/types';
-import { calculateFormationIntegrity } from './formation';
+import { calculateFormationIntegrity, dayKey } from './formation';
 
 const NOW = new Date('2026-07-18T12:00:00Z');
 function daysAgo(n: number): string {
@@ -30,6 +30,7 @@ describe('calculateFormationIntegrity', () => {
         record({ id: 'e', completedAtIso: daysAgo(30) }), // outside the window
         record({ id: 'f', outcome: 'abandoned', completedAtIso: daysAgo(1) }), // not completed
       ],
+      [],
       NOW,
     );
     expect(integrity.activeDays).toBe(3);
@@ -38,8 +39,23 @@ describe('calculateFormationIntegrity', () => {
   });
 
   it('is zero with no recent completed watches', () => {
-    const integrity = calculateFormationIntegrity([record({ completedAtIso: daysAgo(30) })], NOW);
+    const integrity = calculateFormationIntegrity(
+      [record({ completedAtIso: daysAgo(30) })],
+      [],
+      NOW,
+    );
     expect(integrity.activeDays).toBe(0);
     expect(integrity.percent).toBe(0);
+  });
+
+  it('treats a marked recovery day as neutral, raising integrity', () => {
+    const records = [record({ id: 'a', completedAtIso: daysAgo(0) })]; // 1 active day
+    const restKey = dayKey(new Date(daysAgo(1)));
+
+    const without = calculateFormationIntegrity(records, [], NOW);
+    const withRecovery = calculateFormationIntegrity(records, [restKey], NOW);
+
+    expect(without.percent).toBe(14); // round(1/7*100)
+    expect(withRecovery.percent).toBe(17); // round(1/6*100) — rest day left the denominator
   });
 });

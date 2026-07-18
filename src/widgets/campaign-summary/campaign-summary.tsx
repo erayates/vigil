@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { calculateDisciplina } from '@/entities/focus-session/lib/disciplina';
-import { calculateFormationIntegrity } from '@/entities/focus-session/lib/formation';
+import { calculateFormationIntegrity, dayKey } from '@/entities/focus-session/lib/formation';
 import { calculateRank } from '@/entities/focus-session/lib/rank';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
+import { useRecoveryStore } from '@/features/progression/model/use-recovery-store';
 
 function compactDuration(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
@@ -57,7 +58,14 @@ export function CampaignSummary() {
   const maxDaySeconds = Math.max(1, ...weekDays.map((day) => day.seconds));
   const disciplina = useMemo(() => calculateDisciplina(history), [history]);
   const rank = useMemo(() => calculateRank(disciplina.points), [disciplina.points]);
-  const formation = useMemo(() => calculateFormationIntegrity(history), [history]);
+  const recoveryDays = useRecoveryStore((state) => state.recoveryDays);
+  const toggleRecoveryDay = useRecoveryStore((state) => state.toggleDay);
+  const todayKey = dayKey(new Date());
+  const isRecoveryToday = recoveryDays.includes(todayKey);
+  const formation = useMemo(
+    () => calculateFormationIntegrity(history, recoveryDays),
+    [history, recoveryDays],
+  );
 
   const target = 6;
   const progress = Math.min(100, (todaySessions / target) * 100);
@@ -137,6 +145,14 @@ export function CampaignSummary() {
             </div>
           ))}
         </div>
+        <button
+          type="button"
+          className="recovery-toggle"
+          aria-pressed={isRecoveryToday}
+          onClick={() => toggleRecoveryDay(todayKey)}
+        >
+          {isRecoveryToday ? '✓ Recovery day — rest counts' : 'Mark today a recovery day'}
+        </button>
       </section>
     </section>
   );
