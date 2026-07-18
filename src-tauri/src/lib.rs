@@ -241,6 +241,14 @@ fn session_reset(
     snapshot
 }
 
+#[tauri::command]
+fn session_history(
+    db: tauri::State<'_, Mutex<Connection>>,
+) -> Result<Vec<repository::HistoryRecord>, String> {
+    let conn = db.lock().unwrap();
+    repository::recent_records(&conn, 50)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -307,7 +315,8 @@ pub fn run() {
             session_pause,
             session_resume,
             session_complete,
-            session_reset
+            session_reset,
+            session_history
         ])
         .run(tauri::generate_context!())
         .expect("error while running VIGIL");

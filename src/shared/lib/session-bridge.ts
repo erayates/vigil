@@ -15,6 +15,18 @@ const sessionSnapshotSchema = z.object({
 
 export type SessionSnapshot = z.infer<typeof sessionSnapshotSchema>;
 
+const historyRecordSchema = z.object({
+  id: z.string(),
+  missionTitle: z.string(),
+  victoryCondition: z.string(),
+  plannedDurationSeconds: z.number(),
+  focusedDurationSeconds: z.number(),
+  completedAtMs: z.number(),
+  outcome: z.string(),
+});
+
+export type HistoryRecordDto = z.infer<typeof historyRecordSchema>;
+
 export interface StartSessionArgs {
   missionTitle: string;
   victoryCondition: string;
@@ -48,6 +60,15 @@ export const sessionBridge = {
   resume: () => call('session_resume'),
   complete: () => call('session_complete'),
   reset: () => call('session_reset'),
+  history: async (): Promise<HistoryRecordDto[]> => {
+    if (!isTauriRuntime()) return [];
+    try {
+      return z.array(historyRecordSchema).parse(await invoke('session_history'));
+    } catch (error) {
+      console.error('[sessionBridge] session_history failed', error);
+      return [];
+    }
+  },
   subscribe: async (onChange: (snapshot: SessionSnapshot) => void): Promise<UnlistenFn> => {
     if (!isTauriRuntime()) return () => {};
     return listen('session://changed', (event) => {

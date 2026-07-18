@@ -1,5 +1,6 @@
 use crate::session::{Phase, SessionState};
 use rusqlite::{params, Connection, OptionalExtension};
+use serde::Serialize;
 
 pub struct StoredSession {
     pub id: String,
@@ -162,6 +163,52 @@ pub fn list_recent(conn: &Connection, limit: i64) -> Result<Vec<StoredSession>, 
         .map_err(|error| error.to_string())
 }
 
+/// A finished (completed or abandoned) session, shaped for the frontend history.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryRecord {
+    pub id: String,
+    pub mission_title: String,
+    pub victory_condition: String,
+    pub planned_duration_seconds: i64,
+    pub focused_duration_seconds: i64,
+    pub completed_at_ms: i64,
+    pub outcome: String,
+}
+
+/// The most recent finished sessions, newest first (for dashboard statistics).
+pub fn recent_records(conn: &Connection, limit: i64) -> Result<Vec<HistoryRecord>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT s.id, m.title, m.victory_condition, s.planned_duration_seconds,
+                    s.focused_duration_seconds, s.completed_at, s.outcome
+             FROM focus_sessions s
+             JOIN missions m ON m.id = s.mission_id
+             WHERE s.state IN ('complete', 'abandoned')
+             ORDER BY s.completed_at DESC
+             LIMIT ?1",
+        )
+        .map_err(|error| error.to_string())?;
+    let rows = stmt
+        .query_map(params![limit], |row| {
+            let completed_at: Option<String> = row.get(5)?;
+            Ok(HistoryRecord {
+                id: row.get(0)?,
+                mission_title: row.get(1)?,
+                victory_condition: row.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                planned_duration_seconds: row.get(3)?,
+                focused_duration_seconds: row.get(4)?,
+                completed_at_ms: completed_at
+                    .and_then(|value| value.parse().ok())
+                    .unwrap_or(0),
+                outcome: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
+            })
+        })
+        .map_err(|error| error.to_string())?;
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| error.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -280,5 +327,20 @@ mod tests {
         record_session(&conn, &recovered, 60, 62_000).unwrap();
         assert_eq!(list_recent(&conn, 10).unwrap().len(), 1); // one record, not two
         assert!(active_session(&conn).unwrap().is_none());
+    }
+
+    #[test]
+    fn recent_records_returns_finished_sessions_with_completion_time() {
+        let conn = db::open(":memory:").unwrap();
+        let mut s = focusing_session();
+        s.complete().unwrap();
+        record_session(&conn, &s, 90, 100_000).unwrap();
+
+        let records = recent_records(&conn, 10).unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].mission_title, "Ship slice");
+        assert_eq!(records[0].focused_duration_seconds, 90);
+        assert_eq!(records[0].completed_at_ms, 100_000);
+        assert_eq!(records[0].outcome, "completed");
     }
 }

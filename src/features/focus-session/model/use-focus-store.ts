@@ -22,6 +22,7 @@ interface FocusState {
   setModeId: (value: FocusModeId) => void;
   setCustomDurationMinutes: (value: number) => void;
   applySnapshot: (snapshot: SessionSnapshot) => void;
+  setHistory: (records: SessionRecord[]) => void;
   startSession: () => void;
   pauseSession: () => void;
   resumeSession: () => void;
@@ -79,6 +80,7 @@ export const useFocusStore = create<FocusState>()(
           totalPausedMs: snapshot.totalPausedMs,
           pauseStartedAtMs: snapshot.pauseStartedAtMs,
         }),
+      setHistory: (history) => set({ history }),
       startSession: () => {
         const state = get();
         if (state.missionTitle.trim().length === 0 || state.phase !== 'idle') return;
@@ -208,14 +210,33 @@ export const useFocusStore = create<FocusState>()(
   ),
 );
 
-// Under Tauri the Rust core is authoritative: hydrate from it, then mirror every
-// session://changed broadcast. In a plain browser this is a no-op and the store
-// keeps its local behaviour. Idempotent — safe to call once from each window.
+async function refreshHistory(): Promise<void> {
+  const records = await sessionBridge.history();
+  useFocusStore.getState().setHistory(
+    records.map((record) => ({
+      id: record.id,
+      missionTitle: record.missionTitle,
+      victoryCondition: record.victoryCondition,
+      plannedDurationSeconds: record.plannedDurationSeconds,
+      focusedDurationSeconds: record.focusedDurationSeconds,
+      completedAtIso: new Date(record.completedAtMs).toISOString(),
+      outcome: record.outcome === 'abandoned' ? 'abandoned' : 'completed',
+    })),
+  );
+}
+
+// Under Tauri the Rust core is authoritative: hydrate state + history from it, then
+// mirror every session://changed broadcast. In a plain browser this is a no-op and
+// the store keeps its local behaviour. Idempotent — safe to call once per window.
 let sessionSyncStarted = false;
 export async function initSessionSync(): Promise<void> {
   if (sessionSyncStarted || !isTauriRuntime()) return;
   sessionSyncStarted = true;
   const snapshot = await sessionBridge.get();
   if (snapshot) useFocusStore.getState().applySnapshot(snapshot);
-  await sessionBridge.subscribe((next) => useFocusStore.getState().applySnapshot(next));
+  await refreshHistory();
+  await sessionBridge.subscribe((next) => {
+    useFocusStore.getState().applySnapshot(next);
+    void refreshHistory();
+  });
 }
