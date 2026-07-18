@@ -1,6 +1,6 @@
 [package]
 name = "vigil-focus"
-version = "0.0.2"
+version = "0.1.0"
 description = "Roman-inspired pixel-art desktop focus companion"
 authors = ["Eray Ates"]
 edition = "2021"

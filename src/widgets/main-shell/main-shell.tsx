@@ -100,7 +100,7 @@ export function MainShell() {
 
       <footer className="motto-ribbon">
         <span>DISCIPLINA EST VICTORIA</span>
-        <small>v0.0.2 · PIXEL UI FOUNDATION</small>
+        <small>v0.1.0 · FOCUS VERTICAL SLICE</small>
       </footer>
     </div>
   );
