@@ -1,6 +1,7 @@
 pub mod db;
 pub mod repository;
 mod session;
+pub mod window;
 
 use rusqlite::Connection;
 use session::{SessionSnapshot, SessionState};
@@ -255,6 +256,40 @@ pub fn run() {
                 *app.state::<Mutex<SessionState>>().lock().unwrap() = recovered;
             }
             app.manage(Mutex::new(connection));
+
+            // Keep the companion reachable if a monitor was unplugged since last run.
+            if let Some(companion) = app.get_webview_window("companion") {
+                if let (Ok(pos), Ok(size), Ok(monitors)) = (
+                    companion.outer_position(),
+                    companion.outer_size(),
+                    companion.available_monitors(),
+                ) {
+                    let areas: Vec<window::WorkArea> = monitors
+                        .iter()
+                        .map(|monitor| {
+                            let p = monitor.position();
+                            let s = monitor.size();
+                            window::WorkArea {
+                                x: p.x,
+                                y: p.y,
+                                width: s.width as i32,
+                                height: s.height as i32,
+                            }
+                        })
+                        .collect();
+                    let (nx, ny) = window::clamp_to_work_areas(
+                        pos.x,
+                        pos.y,
+                        size.width as i32,
+                        size.height as i32,
+                        &areas,
+                    );
+                    if (nx, ny) != (pos.x, pos.y) {
+                        let _ = companion.set_position(tauri::PhysicalPosition::new(nx, ny));
+                    }
+                }
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

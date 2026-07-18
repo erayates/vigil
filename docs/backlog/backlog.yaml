@@ -232,7 +232,7 @@ items:
   - id: VIGIL-010
     phase: P1
     version: 0.1.0
-    status: planned
+    status: done
     priority: P1
     title: Clamp companion to monitor work area
     asset_dependencies:
