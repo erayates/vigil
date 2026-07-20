@@ -7,12 +7,6 @@ import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { dataBridge } from '@/shared/lib/data-bridge';
 import { isTauriRuntime } from '@/shared/lib/session-bridge';
 
-const queuedOrders = [
-  { title: 'Review design mockups', priority: 'MEDIUM' },
-  { title: 'Write documentation', priority: 'MEDIUM' },
-  { title: "Plan tomorrow's tasks", priority: 'LOW' },
-] as const;
-
 export function CampaignBoard() {
   const {
     missionTitle,
@@ -151,21 +145,6 @@ export function CampaignBoard() {
             ⚑
           </span>
         </article>
-
-        {queuedOrders.map((order) => (
-          <article className="campaign-order campaign-order--queued" key={order.title}>
-            <div className="order-check" aria-hidden="true" />
-            <div className="order-copy">
-              <strong>{order.title}</strong>
-              <div className="order-meta">
-                <span
-                  className={`priority-shield priority-shield--${order.priority.toLowerCase()}`}
-                />
-                <span>{order.priority}</span>
-              </div>
-            </div>
-          </article>
-        ))}
       </div>
 
       <div className="victory-field">
@@ -319,17 +298,6 @@ export function CampaignBoard() {
         </div>
       </details>
 
-      <footer className="campaign-board-footer">
-        <button
-          type="button"
-          disabled
-          aria-label="Add task — available in v0.2.0"
-          title="Task queue editing is planned for v0.2.0"
-        >
-          <span aria-hidden="true">＋</span> Add task
-        </button>
-        <strong>{1 + queuedOrders.length} tasks</strong>
-      </footer>
     </section>
   );
 }

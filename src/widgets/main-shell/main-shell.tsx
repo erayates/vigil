@@ -75,16 +75,16 @@ export function MainShell() {
           <button
             type="button"
             disabled
-            title="Statistics screen is scheduled for v0.2.0"
-            aria-label="Statistics — available in v0.2.0"
+            title="A dedicated statistics screen is not built yet — the weekly summary is below"
+            aria-label="Statistics — not available yet"
           >
             ▥
           </button>
           <button
             type="button"
             disabled
-            title="Settings screen is scheduled for v0.2.0"
-            aria-label="Settings — available in v0.2.0"
+            title="A dedicated settings screen is not built yet — doctrine and companion settings live in the campaign board"
+            aria-label="Settings — not available yet"
           >
             ⚙
           </button>
@@ -130,7 +130,7 @@ export function MainShell() {
 
       <footer className="motto-ribbon">
         <span>DISCIPLINA EST VICTORIA</span>
-        <small>v0.2.0 · DAILY-USE ALPHA</small>
+        <small>v0.4.0 · HARDENED ALPHA</small>
       </footer>
     </div>
   );

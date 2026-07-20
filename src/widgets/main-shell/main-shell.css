@@ -248,8 +248,10 @@
 .campaign-orders {
   min-height: 0;
   display: grid;
-  grid-template-rows: 1.2fr repeat(3, 1fr);
-  overflow: hidden;
+  /* Rows size to their content and scroll. A fixed row template squeezed the
+     copy until entries overlapped each other. */
+  grid-auto-rows: min-content;
+  overflow-y: auto;
   border: 3px solid #71583e;
   background: url('/assets/ui/textures/parchment-tile.png');
 }
@@ -623,37 +625,6 @@
   background: var(--parchment-50);
 }
 
-.campaign-board-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: auto -5px 0;
-  border-top: 3px solid #6e5138;
-  padding: 6px 10px 4px;
-  color: #6d271c;
-  z-index: 2;
-  text-transform: uppercase;
-}
-
-.campaign-board-footer button {
-  border: 0;
-  padding: 0;
-  color: #4b3122;
-  background: transparent;
-  font-size: 0.7rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.campaign-board-footer button:disabled {
-  opacity: 0.75;
-}
-
-.campaign-board-footer strong {
-  font-size: 0.67rem;
-  letter-spacing: 0.08em;
-}
-
 .focus-chamber {
   display: grid;
   grid-template-rows: auto minmax(150px, 1fr) auto auto auto auto;
@@ -768,7 +739,7 @@
 
 .focus-controls {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   align-self: end;
   margin: 8px -8px -8px;

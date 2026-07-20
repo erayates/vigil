@@ -209,18 +209,6 @@ export function FocusChamber() {
               </span>
               <strong>Reset</strong>
             </button>
-            <button
-              className="control-button control-button--skip"
-              type="button"
-              disabled
-              aria-label="Skip — available in v0.2.0"
-              title="Break skipping is introduced with the Doctrine flow in v0.2.0"
-            >
-              <span className="control-icon" aria-hidden="true">
-                ▶▶
-              </span>
-              <strong>Skip</strong>
-            </button>
           </div>
 
           {(phase === 'focusing' || phase === 'paused') && (

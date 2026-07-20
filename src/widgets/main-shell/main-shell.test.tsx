@@ -67,13 +67,14 @@ describe('MainShell', () => {
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
-  it('names the target version on disabled roadmap controls', () => {
+  it('says plainly that unbuilt controls are unavailable, without promising a version', () => {
     render(<MainShell />);
 
-    for (const name of [/Statistics.*v0\.2\.0/i, /Settings.*v0\.2\.0/i, /Skip.*v0\.2\.0/i]) {
-      const control = screen.getByRole('button', { name });
-      expect(control).toBeDisabled();
+    for (const name of [/Statistics — not available yet/i, /Settings — not available yet/i]) {
+      expect(screen.getByRole('button', { name })).toBeDisabled();
     }
+    // A version promise in a label rots the moment the version ships.
+    expect(screen.queryByRole('button', { name: /available in v\d/i })).toBeNull();
   });
 
   it('starts a recovery break from the header break tab', () => {

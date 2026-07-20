@@ -1,7 +1,7 @@
 project: VIGIL
-current_version: 0.2.0
-next_release: 0.3.0
-updated_at: 2026-07-18
+current_version: 0.4.0
+next_release: 0.5.0
+updated_at: 2026-07-20
 
 items:
   - id: VIGIL-UI-001
@@ -51,7 +51,7 @@ items:
   - id: VIGIL-UI-002
     phase: P0-C
     version: 0.0.3
-    status: ready
+    status: done
     priority: P0
     title: Add deterministic dashboard visual tests
     asset_dependencies:
@@ -66,7 +66,7 @@ items:
   - id: VIGIL-UI-003
     phase: P0-C
     version: 0.0.3
-    status: ready
+    status: done
     priority: P0
     title: Complete keyboard and control-state pass
     asset_dependencies:
