@@ -540,7 +540,7 @@ items:
   - id: VIGIL-032
     phase: P4
     version: 0.4.0
-    status: planned
+    status: done
     priority: P2
     title: Multi-monitor placement matrix
     asset_dependencies:
@@ -596,7 +596,7 @@ items:
   - id: VIGIL-036
     phase: P4
     version: 0.4.0
-    status: planned
+    status: done
     priority: P2
     title: Set and verify an idle resource budget
     asset_dependencies:
@@ -610,7 +610,7 @@ items:
   - id: VIGIL-037
     phase: P4
     version: 0.4.0
-    status: planned
+    status: done
     priority: P2
     title: Define installer and uninstaller data behaviour
     asset_dependencies:
