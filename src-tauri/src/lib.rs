@@ -437,14 +437,18 @@ fn data_import(
     repository::import_data(&conn, &bundle)
 }
 
-/// Move the companion to the left or right edge of the primary monitor. Runtime
-/// window placement — best-effort, silently ignored if the window/monitor is gone.
+/// Move the companion to the left or right edge of the monitor it is already on
+/// — flipping the side must never drag it off the display the user chose. Falls
+/// back to the primary monitor. Best-effort; ignored if the window is gone.
 fn apply_companion_side(app: &tauri::AppHandle, side: &str) {
     let Some(companion) = app.get_webview_window("companion") else {
         return;
     };
-    let (Ok(size), Ok(Some(monitor))) = (companion.outer_size(), companion.primary_monitor())
-    else {
+    let monitor = match companion.current_monitor() {
+        Ok(Some(monitor)) => Some(monitor),
+        _ => companion.primary_monitor().ok().flatten(),
+    };
+    let (Ok(size), Some(monitor)) = (companion.outer_size(), monitor) else {
         return;
     };
     let mpos = monitor.position();
