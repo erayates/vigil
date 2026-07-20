@@ -648,3 +648,17 @@ items:
       - Each migration step is exercised from the previous schema version.
       - Data written before a migration survives it.
       - Re-running migrations stays safe.
+
+  - id: VIGIL-040
+    phase: P4
+    version: 0.5.0
+    status: done
+    priority: P2
+    title: Compute all-time metrics from the full database
+    asset_dependencies:
+      - NONE
+    objective: Keep Disciplina and Total Time correct once history exceeds the recent-list cap.
+    acceptance:
+      - Lifetime totals aggregate over every finished session, not the capped list.
+      - The recent, weekly and today panels are unaffected.
+      - The aggregate is unit-tested past the cap.

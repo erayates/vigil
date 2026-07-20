@@ -21,12 +21,22 @@ points           = completedWatches * 10 + focusedMinutes
 - **Not reward-first:** points derive from records, never from UI actions, and the
   mission stays visually dominant over progression.
 
-## Known limitation
+## All-time accuracy
 
-The current implementation derives Disciplina from the loaded session history,
-which is capped (like the "Total Time" and weekly metrics). For long-term
-accuracy a future task replaces these all-time metrics with a Rust aggregate over
-every record; tracked as shared debt with the weekly-summary cap.
+Disciplina points and Total Time are computed from a **Rust aggregate over the
+whole database** (`repository::lifetime_stats`, exposed as the `session_stats`
+command), not from the capped recent-record list. So they keep counting
+correctly however many sessions accumulate — past the point where the recent
+list stops returning every row.
+
+The dashboard feeds those authoritative totals through `disciplinaFromTotals`,
+which is the same formula as `calculateDisciplina`, just given the aggregate
+counts instead of re-deriving them from records. A plain browser (no Rust core)
+has no aggregate and falls back to the local history.
+
+The **weekly** and **today** panels still derive from the recent list, which is
+correct in practice: they only look at a 7-day window, and exceeding ~50 finished
+sessions inside seven days is not a real usage pattern.
 
 ## Formation Integrity
 

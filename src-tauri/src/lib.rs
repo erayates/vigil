@@ -370,6 +370,16 @@ fn session_history(
     repository::recent_records(&conn, 50)
 }
 
+/// Lifetime totals over the whole database, so the all-time dashboard numbers do
+/// not stop growing once history exceeds the recent-list page.
+#[tauri::command]
+fn session_stats(
+    db: tauri::State<'_, Mutex<Connection>>,
+) -> Result<repository::LifetimeStats, String> {
+    let conn = db.lock().unwrap();
+    repository::lifetime_stats(&conn)
+}
+
 #[tauri::command]
 fn campaign_get(
     db: tauri::State<'_, Mutex<Connection>>,
@@ -771,6 +781,7 @@ pub fn run() {
             session_open_debrief,
             session_record,
             session_history,
+            session_stats,
             session_start_break,
             session_end_break,
             session_discount_gap,

@@ -217,6 +217,44 @@ pub struct HistoryRecord {
     pub outcome: String,
 }
 
+/// Lifetime focus totals over the WHOLE database, not the capped recent list.
+/// The dashboard's all-time numbers derive from this, so they stay correct past
+/// the point where `recent_records` stops returning every session.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LifetimeStats {
+    /// Completed watches only — the Disciplina count.
+    pub completed_watches: i64,
+    /// Focused seconds from completed watches only — the other Disciplina input.
+    pub completed_focused_seconds: i64,
+    /// Focused seconds from every finished watch, completed or abandoned — Total Time.
+    pub total_focused_seconds: i64,
+}
+
+/// Aggregate lifetime totals. The WHERE clause matches `recent_records` exactly
+/// (finished sessions only; recovered/active rows excluded), so the totals and
+/// the recent list can never disagree about which sessions count.
+pub fn lifetime_stats(conn: &Connection) -> Result<LifetimeStats, String> {
+    conn.query_row(
+        "SELECT
+            COALESCE(SUM(CASE WHEN outcome = 'completed' THEN 1 ELSE 0 END), 0),
+            COALESCE(SUM(CASE WHEN outcome = 'completed'
+                             THEN focused_duration_seconds ELSE 0 END), 0),
+            COALESCE(SUM(focused_duration_seconds), 0)
+         FROM focus_sessions
+         WHERE state IN ('complete', 'abandoned')",
+        [],
+        |row| {
+            Ok(LifetimeStats {
+                completed_watches: row.get(0)?,
+                completed_focused_seconds: row.get(1)?,
+                total_focused_seconds: row.get(2)?,
+            })
+        },
+    )
+    .map_err(|error| error.to_string())
+}
+
 /// The most recent finished sessions, newest first (for dashboard statistics).
 pub fn recent_records(conn: &Connection, limit: i64) -> Result<Vec<HistoryRecord>, String> {
     let mut stmt = conn
@@ -903,6 +941,86 @@ mod tests {
         assert_eq!(next.as_deref(), Some("Write tests"));
         // The debrief must not disturb the finished row's outcome.
         assert_eq!(recent_records(&conn, 10).unwrap()[0].outcome, "completed");
+    }
+
+    // Insert a finished session row directly, bypassing the state machine, so a
+    // test can build a large history cheaply.
+    fn insert_finished(conn: &Connection, id: &str, outcome: &str, focused_secs: i64) {
+        conn.execute(
+            "INSERT INTO missions (id, title, status, created_at) VALUES (?1, 'm', 'closed', '0')",
+            params![format!("m-{id}")],
+        )
+        .unwrap();
+        let state = if outcome == "completed" {
+            "complete"
+        } else {
+            "abandoned"
+        };
+        conn.execute(
+            "INSERT INTO focus_sessions
+                (id, mission_id, state, planned_duration_seconds, focused_duration_seconds,
+                 started_at, completed_at, outcome)
+             VALUES (?1, ?2, ?3, 1500, ?4, '1000', '2000', ?5)",
+            params![id, format!("m-{id}"), state, focused_secs, outcome],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn lifetime_stats_sum_the_whole_history_not_just_the_recent_page() {
+        let conn = db::open(":memory:").unwrap();
+        // 60 completed at 100s each, plus 5 abandoned at 30s each. More than any
+        // recent-list page, so a capped read would undercount the all-time totals.
+        for i in 0..60 {
+            insert_finished(&conn, &format!("c{i}"), "completed", 100);
+        }
+        for i in 0..5 {
+            insert_finished(&conn, &format!("a{i}"), "abandoned", 30);
+        }
+
+        let stats = lifetime_stats(&conn).unwrap();
+        assert_eq!(stats.completed_watches, 60);
+        assert_eq!(stats.completed_focused_seconds, 6_000);
+        // Total time counts abandoned focus too: 60*100 + 5*30.
+        assert_eq!(stats.total_focused_seconds, 6_150);
+
+        // The bug this guards: the recent page stops at its limit, the totals do not.
+        let paged = recent_records(&conn, 50).unwrap();
+        assert_eq!(paged.len(), 50);
+        let paged_focus: i64 = paged.iter().map(|r| r.focused_duration_seconds).sum();
+        assert!(stats.total_focused_seconds > paged_focus);
+    }
+
+    #[test]
+    fn lifetime_stats_ignore_recovered_and_active_rows() {
+        let conn = db::open(":memory:").unwrap();
+        insert_finished(&conn, "c0", "completed", 120);
+        // An active session (still running) and a recovered row must not be counted.
+        record_session(&conn, &focusing_session(), 999, 61_000).unwrap();
+        conn.execute(
+            "INSERT INTO missions (id, title, status, created_at) VALUES ('mr', 'm', 'active', '0')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO focus_sessions
+                (id, mission_id, state, planned_duration_seconds, focused_duration_seconds, started_at)
+             VALUES ('r0', 'mr', 'recovered', 1500, 500, '1000')",
+            [],
+        )
+        .unwrap();
+
+        let stats = lifetime_stats(&conn).unwrap();
+        assert_eq!(stats.completed_watches, 1);
+        assert_eq!(stats.total_focused_seconds, 120); // not 120+999+500
+    }
+
+    #[test]
+    fn lifetime_stats_are_zero_on_an_empty_database() {
+        let conn = db::open(":memory:").unwrap();
+        let stats = lifetime_stats(&conn).unwrap();
+        assert_eq!(stats.completed_watches, 0);
+        assert_eq!(stats.total_focused_seconds, 0);
     }
 
     #[test]

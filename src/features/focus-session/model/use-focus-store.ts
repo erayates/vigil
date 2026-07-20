@@ -8,6 +8,7 @@ import {
   isTauriRuntime,
   sessionBridge,
   type DebriefFields,
+  type LifetimeStatsDto,
   type SessionSnapshot,
 } from '@/shared/lib/session-bridge';
 
@@ -27,12 +28,18 @@ interface FocusState {
   /** An away interval the user has not classified yet. */
   pendingGapMs: number | null;
   history: SessionRecord[];
+  /**
+   * Authoritative lifetime totals from the Rust core (Tauri only). Null in a
+   * plain browser, where the all-time numbers fall back to the local history.
+   */
+  lifetime: LifetimeStatsDto | null;
   setMissionTitle: (value: string) => void;
   setVictoryCondition: (value: string) => void;
   setModeId: (value: FocusModeId) => void;
   setCustomDurationMinutes: (value: number) => void;
   applySnapshot: (snapshot: SessionSnapshot) => void;
   setHistory: (records: SessionRecord[]) => void;
+  setLifetime: (lifetime: LifetimeStatsDto | null) => void;
   startSession: () => void;
   pauseSession: () => void;
   resumeSession: () => void;
@@ -72,6 +79,7 @@ export const useFocusStore = create<FocusState>()(
       lastTickMs: null,
       pendingGapMs: null,
       history: [],
+      lifetime: null,
       setMissionTitle: (missionTitle) => set({ missionTitle }),
       setVictoryCondition: (victoryCondition) => set({ victoryCondition }),
       setModeId: (modeId) => {
@@ -105,6 +113,7 @@ export const useFocusStore = create<FocusState>()(
         });
       },
       setHistory: (history) => set({ history }),
+      setLifetime: (lifetime) => set({ lifetime }),
       startSession: () => {
         const state = get();
         if (state.missionTitle.trim().length === 0 || state.phase !== 'idle') return;
@@ -334,9 +343,15 @@ export const useFocusStore = create<FocusState>()(
   ),
 );
 
+// Refresh both the recent-record list and the lifetime totals — they change at
+// the same moments (startup, and when a session ends), so one read covers both.
 async function refreshHistory(): Promise<void> {
-  const records = await sessionBridge.history();
-  useFocusStore.getState().setHistory(
+  const [records, lifetime] = await Promise.all([
+    sessionBridge.history(),
+    sessionBridge.stats(),
+  ]);
+  const store = useFocusStore.getState();
+  store.setHistory(
     records.map((record) => ({
       id: record.id,
       missionTitle: record.missionTitle,
@@ -347,6 +362,7 @@ async function refreshHistory(): Promise<void> {
       outcome: record.outcome === 'abandoned' ? 'abandoned' : 'completed',
     })),
   );
+  store.setLifetime(lifetime);
 }
 
 // Under Tauri the Rust core is authoritative: hydrate state + history from it, then

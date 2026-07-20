@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { calculateDisciplina } from '@/entities/focus-session/lib/disciplina';
+import { calculateDisciplina, disciplinaFromTotals } from '@/entities/focus-session/lib/disciplina';
 import { calculateFormationIntegrity, dayKey } from '@/entities/focus-session/lib/formation';
 import { calculateRank } from '@/entities/focus-session/lib/rank';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
@@ -18,7 +18,8 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function CampaignSummary() {
   const history = useFocusStore((state) => state.history);
-  const { todaySessions, todaySeconds, totalSeconds } = useMemo(() => {
+  const lifetime = useFocusStore((state) => state.lifetime);
+  const { todaySessions, todaySeconds } = useMemo(() => {
     const today = new Date().toDateString();
     const todayRecords = history.filter(
       (record) => new Date(record.completedAtIso).toDateString() === today,
@@ -28,9 +29,15 @@ export function CampaignSummary() {
       // still contributed focus time but are not victories.
       todaySessions: todayRecords.filter((record) => record.outcome === 'completed').length,
       todaySeconds: todayRecords.reduce((sum, record) => sum + record.focusedDurationSeconds, 0),
-      totalSeconds: history.reduce((sum, record) => sum + record.focusedDurationSeconds, 0),
     };
   }, [history]);
+
+  // All-time numbers come from the authoritative lifetime aggregate when present
+  // (Tauri); the capped history would silently undercount past ~50 sessions. In a
+  // plain browser lifetime is null and the local history stands in.
+  const totalSeconds = lifetime
+    ? lifetime.totalFocusedSeconds
+    : history.reduce((sum, record) => sum + record.focusedDurationSeconds, 0);
 
   // Last seven days (today last), derived entirely from the persisted records.
   const { weekDays, weekSeconds, weekCompleted } = useMemo(() => {
@@ -56,7 +63,13 @@ export function CampaignSummary() {
     };
   }, [history]);
   const maxDaySeconds = Math.max(1, ...weekDays.map((day) => day.seconds));
-  const disciplina = useMemo(() => calculateDisciplina(history), [history]);
+  const disciplina = useMemo(
+    () =>
+      lifetime
+        ? disciplinaFromTotals(lifetime.completedWatches, lifetime.completedFocusedSeconds)
+        : calculateDisciplina(history),
+    [lifetime, history],
+  );
   const rank = useMemo(() => calculateRank(disciplina.points), [disciplina.points]);
   const recoveryDays = useRecoveryStore((state) => state.recoveryDays);
   const toggleRecoveryDay = useRecoveryStore((state) => state.toggleDay);

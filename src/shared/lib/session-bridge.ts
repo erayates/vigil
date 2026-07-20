@@ -36,6 +36,14 @@ const historyRecordSchema = z.object({
 
 export type HistoryRecordDto = z.infer<typeof historyRecordSchema>;
 
+const lifetimeStatsSchema = z.object({
+  completedWatches: z.number(),
+  completedFocusedSeconds: z.number(),
+  totalFocusedSeconds: z.number(),
+});
+
+export type LifetimeStatsDto = z.infer<typeof lifetimeStatsSchema>;
+
 export interface StartSessionArgs {
   missionTitle: string;
   victoryCondition: string;
@@ -87,6 +95,15 @@ export const sessionBridge = {
     } catch (error) {
       console.error('[sessionBridge] session_history failed', error);
       return [];
+    }
+  },
+  stats: async (): Promise<LifetimeStatsDto | null> => {
+    if (!isTauriRuntime()) return null;
+    try {
+      return lifetimeStatsSchema.parse(await invoke('session_stats'));
+    } catch (error) {
+      console.error('[sessionBridge] session_stats failed', error);
+      return null;
     }
   },
   subscribe: async (onChange: (snapshot: SessionSnapshot) => void): Promise<UnlistenFn> => {
