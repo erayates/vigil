@@ -120,6 +120,52 @@ assets:
         art must be supplied and approved before the v0.1.0 release; scaffold
         screenshots are not production baselines.
 
+  - id: PROD-CAMP-001
+    name: Production camp growth scene
+    category: scene-art
+    status: request-user
+    required_by: v0.3.0
+    reference: REF-UI-001
+    requested_format:
+      - aseprite-or-layered-source
+      - transparent-png
+    target_css_box: [410, 460]
+    suggested_source_px: [104, 116]
+    required_states:
+      - stage-1-bare-ground
+      - stage-2-first-tent
+      - stage-3-palisade
+      - stage-4-watchtower
+      - stage-5-full-camp
+    exact_requirements:
+      - identical palette to the companion sprite set
+      - nearest-neighbour safe at integer scale
+      - additive stages (each later stage keeps the earlier structures)
+      - no baked background outside the scene
+    blocks:
+      - VIGIL-029
+
+  - id: PROD-COMP-002
+    name: Production cosmetic equipment variants
+    category: character-sprite
+    status: request-user
+    required_by: v0.3.0
+    reference: PROD-COMP-001
+    requested_format:
+      - aseprite-or-layered-source
+      - transparent-png-overlay-layers
+    source_frame_px: [64, 96]
+    required_items:
+      - helmet-crest
+      - shield-emblem
+      - cloak
+    exact_requirements:
+      - aligns frame-for-frame with the PROD-COMP-001 states
+      - identical palette and anatomy
+      - overlay layers must not bake in the base companion
+    blocks:
+      - VIGIL-030
+
   - id: PROD-UI-001
     name: Production Roman pixel UI kit
     category: ui-kit

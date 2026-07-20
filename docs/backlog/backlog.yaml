@@ -502,7 +502,7 @@ items:
     priority: P2
     title: Add camp growth visualization
     asset_dependencies:
-      - PROD-COMP-001
+      - PROD-CAMP-001
     objective: Visualize accumulated progress as a growing camp scene.
     acceptance:
       - Camp state derives from accepted records.
@@ -516,7 +516,7 @@ items:
     priority: P2
     title: Add cosmetic equipment unlocks
     asset_dependencies:
-      - PROD-COMP-001
+      - PROD-COMP-002
     objective: Unlock cosmetic companion equipment from progression — never paid or random.
     acceptance:
       - No loot boxes, random or paid rewards.
