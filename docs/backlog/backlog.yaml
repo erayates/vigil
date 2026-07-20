@@ -536,3 +536,115 @@ items:
       - No loss-aversion timers or compulsion mechanics exist.
       - Missed days never erase accumulated work.
       - The mission remains visually dominant over progression.
+
+  - id: VIGIL-032
+    phase: P4
+    version: 0.4.0
+    status: planned
+    priority: P2
+    title: Multi-monitor placement matrix
+    asset_dependencies:
+      - NONE
+    objective: Keep the companion correctly placed across monitor add/remove, resolution and scale changes.
+    acceptance:
+      - Placement is defined for each monitor configuration in a documented matrix.
+      - Removing or resizing a display never leaves the companion unreachable.
+      - Placement logic is unit-tested.
+
+  - id: VIGIL-033
+    phase: P4
+    version: 0.4.0
+    status: planned
+    priority: P1
+    title: Detect and classify suspend/resume gaps
+    asset_dependencies:
+      - NONE
+    objective: Stop counting machine sleep as focus time without the user deciding.
+    acceptance:
+      - A suspend gap during a watch is detected on resume.
+      - The user classifies the gap and the record reflects that choice.
+      - Gap detection is unit-tested.
+
+  - id: VIGIL-034
+    phase: P4
+    version: 0.4.0
+    status: planned
+    priority: P1
+    title: Recover from crashes and corrupted state
+    asset_dependencies:
+      - NONE
+    objective: Never lose or silently delete data when stored state is invalid.
+    acceptance:
+      - Invalid stored state preserves a recovery record and returns to Idle.
+      - A corrupted database is reported rather than silently recreated.
+      - Recovery paths are unit-tested.
+
+  - id: VIGIL-035
+    phase: P4
+    version: 0.4.0
+    status: planned
+    priority: P1
+    title: Reduced-motion and screen-reader review
+    asset_dependencies:
+      - NONE
+    objective: Make the ritual usable without motion and with assistive technology.
+    acceptance:
+      - prefers-reduced-motion removes non-essential animation.
+      - Every interactive control has an accessible name and role.
+      - Phase changes announce once, never per second.
+
+  - id: VIGIL-036
+    phase: P4
+    version: 0.4.0
+    status: planned
+    priority: P2
+    title: Set and verify an idle resource budget
+    asset_dependencies:
+      - NONE
+    objective: Keep the companion cheap enough to leave running all day.
+    acceptance:
+      - Idle CPU and memory budgets are documented.
+      - No timer or listener runs while idle.
+      - Measurements are recorded against the budget.
+
+  - id: VIGIL-037
+    phase: P4
+    version: 0.4.0
+    status: planned
+    priority: P2
+    title: Define installer and uninstaller data behaviour
+    asset_dependencies:
+      - NONE
+    objective: Make explicit what happens to local data on install, upgrade and uninstall.
+    acceptance:
+      - Upgrade preserves the database and preferences.
+      - Uninstall never deletes user data without explicit consent.
+      - The behaviour is documented for the user.
+
+  - id: VIGIL-038
+    phase: P4
+    version: 0.4.0
+    status: planned
+    priority: P1
+    title: Capability and dependency security audit
+    asset_dependencies:
+      - NONE
+    objective: Confirm least privilege and a clean dependency surface before beta.
+    acceptance:
+      - Every capability permission maps to a feature actually used.
+      - Dependency audits report no known vulnerabilities.
+      - Findings are recorded.
+
+  - id: VIGIL-039
+    phase: P4
+    version: 0.4.0
+    status: planned
+    priority: P1
+    title: Automated migration tests
+    asset_dependencies:
+      - NONE
+    objective: Guarantee every schema upgrade path preserves existing data.
+    acceptance:
+      - Each migration step is exercised from the previous schema version.
+      - Data written before a migration survives it.
+      - Re-running migrations stays safe.
