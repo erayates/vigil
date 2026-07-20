@@ -147,7 +147,9 @@ pub fn active_session(conn: &Connection) -> Result<Option<SessionState>, String>
                 mission_id: Some(row.get(1)?),
                 phase: phase_from_str(&state_str),
                 mission_title: row.get(2)?,
-                victory_condition: row.get(3)?,
+                // Tolerate a NULL victory condition: an imported or hand-edited row
+                // must never make recovery — and therefore startup — fail.
+                victory_condition: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
                 planned_duration_secs: row.get::<_, i64>(5)? as u64,
                 started_at_ms: started_str.parse::<i64>().ok(),
                 total_paused_ms: row.get(7)?,
@@ -157,6 +159,49 @@ pub fn active_session(conn: &Connection) -> Result<Option<SessionState>, String>
     )
     .optional()
     .map_err(|error| error.to_string())
+}
+
+/// Restore the active session for recovery, or — when the stored row cannot be
+/// trusted — preserve it as a recovery record and start Idle instead. An unusable
+/// row is never deleted, and never restored as a broken timer.
+pub fn recover_active_session(conn: &Connection) -> Result<Option<SessionState>, String> {
+    let candidate = match active_session(conn) {
+        Ok(Some(candidate)) => candidate,
+        Ok(None) => return Ok(None),
+        // The row cannot even be read. Preserve it and start Idle rather than
+        // failing startup over unreadable state.
+        Err(error) => {
+            eprintln!("[vigil] unreadable active session preserved as a recovery record: {error}");
+            mark_active_rows_recovered(conn, None)?;
+            return Ok(None);
+        }
+    };
+
+    let usable = candidate.started_at_ms.is_some_and(|started| started > 0)
+        && candidate.planned_duration_secs > 0
+        && candidate.total_paused_ms >= 0;
+    if usable {
+        return Ok(Some(candidate));
+    }
+    mark_active_rows_recovered(conn, candidate.id.as_deref())?;
+    Ok(None)
+}
+
+/// Keep an unusable session row but stop it looking active. Never deletes.
+fn mark_active_rows_recovered(conn: &Connection, id: Option<&str>) -> Result<(), String> {
+    match id {
+        Some(id) => conn.execute(
+            "UPDATE focus_sessions SET state = 'recovered' WHERE id = ?1",
+            params![id],
+        ),
+        None => conn.execute(
+            "UPDATE focus_sessions SET state = 'recovered'
+             WHERE state IN ('focusing', 'paused')",
+            [],
+        ),
+    }
+    .map_err(|error| error.to_string())?;
+    Ok(())
 }
 
 /// A finished (completed or abandoned) session, shaped for the frontend history.
@@ -719,6 +764,80 @@ mod tests {
         assert_eq!(recent.len(), 1);
         assert_eq!(recent[0].id, "s1");
         assert_eq!(recent[0].focused_duration_seconds, 120);
+    }
+
+    #[test]
+    fn an_untrustworthy_active_session_is_preserved_not_restored() {
+        let conn = db::open(":memory:").unwrap();
+        conn.execute(
+            "INSERT INTO missions (id, title, status, created_at)
+             VALUES ('m1', 'Broken', 'active', '0')",
+            [],
+        )
+        .unwrap();
+        // Looks active, but the start time cannot be parsed.
+        conn.execute(
+            "INSERT INTO focus_sessions
+                (id, mission_id, state, planned_duration_seconds, focused_duration_seconds, started_at)
+             VALUES ('s1', 'm1', 'focusing', 1500, 0, 'not-a-timestamp')",
+            [],
+        )
+        .unwrap();
+
+        // The app starts Idle rather than restoring a broken timer.
+        assert!(recover_active_session(&conn).unwrap().is_none());
+
+        // The row survives as a recovery record and no longer looks active.
+        let state: String = conn
+            .query_row(
+                "SELECT state FROM focus_sessions WHERE id = 's1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(state, "recovered");
+        assert_eq!(active_session_count(&conn).unwrap(), 0);
+    }
+
+    #[test]
+    fn an_unreadable_active_row_never_blocks_startup() {
+        let conn = db::open(":memory:").unwrap();
+        conn.execute(
+            "INSERT INTO missions (id, title, status, created_at)
+             VALUES ('m1', 'Broken', 'active', '0')",
+            [],
+        )
+        .unwrap();
+        // The duration column holds text that cannot be read as a number at all.
+        conn.execute(
+            "INSERT INTO focus_sessions
+                (id, mission_id, state, planned_duration_seconds, focused_duration_seconds, started_at)
+             VALUES ('s1', 'm1', 'focusing', 'not-a-number', 0, '1000')",
+            [],
+        )
+        .unwrap();
+
+        // Startup still succeeds — in Idle, without an error.
+        assert!(recover_active_session(&conn).unwrap().is_none());
+
+        let state: String = conn
+            .query_row(
+                "SELECT state FROM focus_sessions WHERE id = 's1'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(state, "recovered");
+    }
+
+    #[test]
+    fn a_healthy_active_session_still_restores() {
+        let conn = db::open(":memory:").unwrap();
+        record_session(&conn, &focusing_session(), 60, 61_000).unwrap();
+        let restored = recover_active_session(&conn)
+            .unwrap()
+            .expect("a restored session");
+        assert_eq!(restored.id.as_deref(), Some("s1"));
     }
 
     #[test]

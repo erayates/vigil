@@ -568,7 +568,7 @@ items:
   - id: VIGIL-034
     phase: P4
     version: 0.4.0
-    status: planned
+    status: done
     priority: P1
     title: Recover from crashes and corrupted state
     asset_dependencies:

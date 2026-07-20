@@ -66,6 +66,35 @@ pub fn migrations() -> Migrations<'static> {
     ])
 }
 
+/// A database that is ready to use, plus the path of a previous file that could
+/// not be read and was preserved instead of being destroyed.
+pub struct Opened {
+    pub connection: Connection,
+    pub quarantined: Option<String>,
+}
+
+/// Open the database, and if the existing file cannot be read, **preserve it**
+/// under a `.corrupt-<timestamp>` name and start a fresh one. A damaged file is
+/// never silently deleted or overwritten, and the caller reports the quarantine
+/// to the user.
+pub fn open_or_quarantine(path: &str, now_ms: i64) -> Result<Opened, String> {
+    match open(path) {
+        Ok(connection) => Ok(Opened {
+            connection,
+            quarantined: None,
+        }),
+        Err(original) => {
+            let preserved = format!("{path}.corrupt-{now_ms}");
+            std::fs::rename(path, &preserved)
+                .map_err(|error| format!("{original}; could not preserve it either: {error}"))?;
+            Ok(Opened {
+                connection: open(path)?,
+                quarantined: Some(preserved),
+            })
+        }
+    }
+}
+
 /// Open (creating if needed) the database at `path`, enable foreign keys, and run
 /// forward-only migrations to the latest schema. Pass ":memory:" for an ephemeral
 /// database. Safe to call on a clean profile and safe to re-run.
@@ -266,6 +295,40 @@ mod tests {
         migrations.to_latest(&mut conn).unwrap();
 
         assert_eq!(session_count(&conn), before);
+    }
+
+    #[test]
+    fn an_unreadable_database_is_preserved_and_replaced() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("vigil.db");
+        let path_str = path.to_str().unwrap();
+        std::fs::write(&path, b"this is not a database at all").unwrap();
+
+        let opened = open_or_quarantine(path_str, 1234).unwrap();
+
+        let preserved = opened
+            .quarantined
+            .expect("the damaged file must be reported");
+        assert!(
+            std::path::Path::new(&preserved).exists(),
+            "the damaged file must be kept, never deleted"
+        );
+        // And the replacement is a working, migrated database.
+        let sessions: i64 = opened
+            .connection
+            .query_row("SELECT count(*) FROM focus_sessions", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(sessions, 0);
+    }
+
+    #[test]
+    fn a_healthy_database_is_never_quarantined() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("vigil.db");
+        let path_str = path.to_str().unwrap();
+        open(path_str).unwrap(); // create it once
+        let opened = open_or_quarantine(path_str, 1).unwrap();
+        assert!(opened.quarantined.is_none());
     }
 
     #[test]

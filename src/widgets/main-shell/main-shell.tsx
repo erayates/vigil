@@ -1,5 +1,6 @@
 import { useDoctrineStore } from '@/features/doctrine/model/use-doctrine-store';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
+import { useStartupNoticeStore } from '@/features/system/model/use-startup-notice-store';
 import { nativeBridge } from '@/shared/lib/native-bridge';
 import { CampaignBoard } from '@/widgets/campaign-board/campaign-board';
 import { CampaignSummary } from '@/widgets/campaign-summary/campaign-summary';
@@ -10,6 +11,8 @@ import './main-shell.css';
 export function MainShell() {
   const { phase, startBreak } = useFocusStore();
   const { shortBreakMinutes, longBreakMinutes } = useDoctrineStore();
+  const startupNotice = useStartupNoticeStore((state) => state.notice);
+  const dismissStartupNotice = useStartupNoticeStore((state) => state.dismiss);
   // Rest belongs between watches, so breaks start only when idle or just finished.
   const breakAvailable = phase === 'idle' || phase === 'complete';
 
@@ -107,6 +110,15 @@ export function MainShell() {
           </button>
         </div>
       </header>
+
+      {startupNotice && (
+        <div className="startup-notice" role="alert">
+          <span>{startupNotice}</span>
+          <button type="button" onClick={dismissStartupNotice}>
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <main className="imperium-main">
         <CampaignBoard />

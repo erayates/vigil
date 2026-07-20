@@ -619,6 +619,15 @@ fn setup_tray(app: &tauri::AppHandle, close_to_tray_enabled: bool) -> tauri::Res
     Ok(())
 }
 
+/// A message the app must show the user about something that happened at startup
+/// (currently: a damaged data file that was preserved rather than destroyed).
+struct StartupNotice(Option<String>);
+
+#[tauri::command]
+fn startup_notice(notice: tauri::State<'_, StartupNotice>) -> Option<String> {
+    notice.0.clone()
+}
+
 #[tauri::command]
 fn recovery_days_get(db: tauri::State<'_, Mutex<Connection>>) -> Result<Vec<String>, String> {
     let conn = db.lock().unwrap();
@@ -657,9 +666,21 @@ pub fn run() {
             std::fs::create_dir_all(&path)?;
             path.push("vigil.db");
             let db_path = path.to_str().ok_or("database path is not valid UTF-8")?;
-            let connection = db::open(db_path)?;
+            // A damaged file is preserved, never destroyed, and reported to the user.
+            let opened = db::open_or_quarantine(db_path, now_ms())?;
+            let notice = opened.quarantined.as_ref().map(|preserved| {
+                eprintln!("[vigil] unreadable database preserved at {preserved}");
+                format!(
+                    "Your previous data file could not be read. It was kept at {preserved} and VIGIL started with a fresh one."
+                )
+            });
+            app.manage(StartupNotice(notice));
+            let connection = opened.connection;
+
             // Recover an active session left by a previous run (forced quit / crash).
-            if let Some(recovered) = repository::active_session(&connection)? {
+            // A row that cannot be trusted is preserved as a recovery record instead
+            // of being restored as a broken timer.
+            if let Some(recovered) = repository::recover_active_session(&connection)? {
                 *app.state::<Mutex<SessionState>>().lock().unwrap() = recovered;
             }
             let close_to_tray_enabled = repository::close_to_tray(&connection).unwrap_or(false);
@@ -759,7 +780,8 @@ pub fn run() {
             companion_prefs_get,
             companion_prefs_set,
             recovery_days_get,
-            recovery_day_toggle
+            recovery_day_toggle,
+            startup_notice
         ])
         .run(tauri::generate_context!())
         .expect("error while running VIGIL");

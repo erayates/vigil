@@ -6,6 +6,7 @@ import { initCompanionPrefsSync } from '@/features/companion/model/use-companion
 import { initDoctrineSync } from '@/features/doctrine/model/use-doctrine-store';
 import { initSessionSync } from '@/features/focus-session/model/use-focus-store';
 import { initRecoverySync } from '@/features/progression/model/use-recovery-store';
+import { initStartupNotice } from '@/features/system/model/use-startup-notice-store';
 import '@/app/styles/global.css';
 
 const root = document.getElementById('root');
@@ -26,3 +27,4 @@ void initCampaignSync();
 void initDoctrineSync();
 void initCompanionPrefsSync();
 void initRecoverySync();
+void initStartupNotice();
