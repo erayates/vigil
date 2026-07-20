@@ -1078,6 +1078,9 @@
   grid-template-columns: 34% 66%;
   gap: 0;
   padding: 0 12px 6px;
+  /* Expanding the progression audit scrolls here instead of spilling on the footer. */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .weekly-summary {
@@ -1150,9 +1153,56 @@
   color: #c9a978;
 }
 
+.weekly-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.progress-audit > summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--bronze-300);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.progress-audit > summary::-webkit-details-marker {
+  display: none;
+}
+
+.progress-audit > summary::before {
+  content: '▸ ';
+}
+
+.progress-audit[open] > summary::before {
+  content: '▾ ';
+}
+
+.progress-audit ul,
+.progress-audit ol {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  color: #d5b880;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.progress-audit p {
+  margin: 6px 0 0;
+  color: #c9a978;
+  font-size: 0.62rem;
+}
+
+.progress-audit b {
+  color: var(--bronze-300);
+}
+
 .recovery-toggle {
   align-self: start;
-  margin-top: 8px;
   padding: 4px 12px;
   border: 2px solid #4d382c;
   background: #271c18;

@@ -3,6 +3,7 @@ import type { SessionRecord } from '@/entities/focus-session/model/types';
 export interface FormationIntegrity {
   activeDays: number; // distinct days in the window with a completed watch
   windowDays: number; // 7
+  restDays: number; // marked recovery days excluded from the denominator
   percent: number; // activeDays / effective window, rounded
 }
 
@@ -50,5 +51,5 @@ export function calculateFormationIntegrity(
   const activeDays = activeDayKeys.size;
   const effectiveWindow = windowDays - restDays;
   const percent = effectiveWindow > 0 ? Math.round((activeDays / effectiveWindow) * 100) : 100;
-  return { activeDays, windowDays, percent };
+  return { activeDays, windowDays, restDays, percent };
 }

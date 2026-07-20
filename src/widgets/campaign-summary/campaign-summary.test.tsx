@@ -58,4 +58,26 @@ describe('CampaignSummary', () => {
     // 1500 + 600 + 300 = 2400s = 40m of focus in the week; 2 completed (a, b).
     expect(screen.getByLabelText('This week')).toHaveTextContent(/40m.*2 watches/);
   });
+
+  it('explains how progression was earned and traces it to specific records', () => {
+    useFocusStore.setState({
+      history: [
+        record({
+          id: 'a',
+          outcome: 'completed',
+          focusedDurationSeconds: 1500, // 25 minutes
+          missionTitle: 'Ship the parser',
+        }),
+      ],
+    });
+
+    render(<CampaignSummary />);
+
+    const audit = screen.getByText(/how progression is earned/i).closest('details');
+    // 1 completed * 10 + 25 focused minutes = 35 points, which is still Tiro.
+    expect(audit).toHaveTextContent('35');
+    expect(audit).toHaveTextContent('Tiro');
+    // The number traces back to the actual accepted record.
+    expect(audit).toHaveTextContent('Ship the parser');
+  });
 });

@@ -484,7 +484,7 @@ items:
   - id: VIGIL-028
     phase: P3
     version: 0.3.0
-    status: planned
+    status: done
     priority: P2
     title: Add progress explanation and audit trail
     asset_dependencies:

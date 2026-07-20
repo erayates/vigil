@@ -66,6 +66,11 @@ export function CampaignSummary() {
     () => calculateFormationIntegrity(history, recoveryDays),
     [history, recoveryDays],
   );
+  // The specific accepted records the numbers above trace back to.
+  const contributingRecords = useMemo(
+    () => history.filter((record) => record.outcome === 'completed').slice(0, 5),
+    [history],
+  );
 
   const target = 6;
   const progress = Math.min(100, (todaySessions / target) * 100);
@@ -145,14 +150,49 @@ export function CampaignSummary() {
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          className="recovery-toggle"
-          aria-pressed={isRecoveryToday}
-          onClick={() => toggleRecoveryDay(todayKey)}
-        >
-          {isRecoveryToday ? '✓ Recovery day — rest counts' : 'Mark today a recovery day'}
-        </button>
+        <div className="weekly-footer">
+          <button
+            type="button"
+            className="recovery-toggle"
+            aria-pressed={isRecoveryToday}
+            onClick={() => toggleRecoveryDay(todayKey)}
+          >
+            {isRecoveryToday ? '✓ Recovery day — rest counts' : 'Mark today a recovery day'}
+          </button>
+
+          <details className="progress-audit">
+            <summary>How progression is earned</summary>
+            <ul>
+              <li>
+                Disciplina — {disciplina.completedWatches} completed × 10 +{' '}
+                {disciplina.focusedMinutes} focused minutes = <b>{disciplina.points}</b> points
+              </li>
+              <li>
+                Rank — {disciplina.points} points reaches <b>{rank.name}</b>
+                {rank.pointsForNext === null
+                  ? ' (highest rank)'
+                  : ` (${rank.pointsForNext} points to the next)`}
+              </li>
+              <li>
+                Formation — {formation.activeDays} active of{' '}
+                {formation.windowDays - formation.restDays} counted days
+                {formation.restDays > 0 ? ` (${formation.restDays} recovery excluded)` : ''} ={' '}
+                <b>{formation.percent}%</b>
+              </li>
+            </ul>
+            <p>Only completed watches count. Nothing here is random or hidden.</p>
+            {contributingRecords.length > 0 && (
+              <ol className="audit-records">
+                {contributingRecords.map((record) => (
+                  <li key={record.id}>
+                    {dayKey(new Date(record.completedAtIso))} — {record.missionTitle} (
+                    {Math.floor(record.focusedDurationSeconds / 60)}m)
+                  </li>
+                ))}
+              </ol>
+            )}
+          </details>
+        </div>
       </section>
     </section>
   );
