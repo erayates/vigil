@@ -638,7 +638,7 @@ items:
   - id: VIGIL-039
     phase: P4
     version: 0.4.0
-    status: planned
+    status: done
     priority: P1
     title: Automated migration tests
     asset_dependencies:

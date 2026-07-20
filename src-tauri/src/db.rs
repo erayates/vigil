@@ -170,6 +170,104 @@ mod tests {
         assert_eq!(active, "default");
     }
 
+    /// How many migrations exist, read from a freshly migrated database so this
+    /// suite keeps covering new steps without being edited.
+    fn latest_version(migrations: &Migrations) -> usize {
+        let mut conn = Connection::open_in_memory().unwrap();
+        migrations.to_latest(&mut conn).unwrap();
+        conn.query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0))
+            .unwrap() as usize
+    }
+
+    /// Insert a mission + finished session using only columns that exist in the
+    /// very first schema, so it can be seeded at any version.
+    fn seed_session(conn: &Connection, tag: &str) {
+        conn.execute(
+            "INSERT INTO missions (id, title, status, created_at)
+             VALUES (?1, ?2, 'closed', '0')",
+            rusqlite::params![format!("m-{tag}"), format!("Mission {tag}")],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO focus_sessions
+                (id, mission_id, state, planned_duration_seconds,
+                 focused_duration_seconds, started_at, completed_at, outcome)
+             VALUES (?1, ?2, 'complete', 1500, 1500, '1000', '2000', 'completed')",
+            rusqlite::params![format!("s-{tag}"), format!("m-{tag}")],
+        )
+        .unwrap();
+    }
+
+    fn session_count(conn: &Connection) -> i64 {
+        conn.query_row("SELECT count(*) FROM focus_sessions", [], |row| row.get(0))
+            .unwrap()
+    }
+
+    #[test]
+    fn every_migration_step_preserves_rows_written_before_it() {
+        let migrations = migrations();
+        for target in 2..=latest_version(&migrations) {
+            let mut conn = Connection::open_in_memory().unwrap();
+            conn.pragma_update(None, "foreign_keys", true).unwrap();
+
+            // Schema as it stood one step earlier, with real data in it.
+            migrations.to_version(&mut conn, target - 1).unwrap();
+            seed_session(&conn, "x");
+            assert_eq!(session_count(&conn), 1, "seeding failed before v{target}");
+
+            // Apply exactly this one step.
+            migrations.to_version(&mut conn, target).unwrap();
+
+            assert_eq!(session_count(&conn), 1, "migration v{target} lost rows");
+            let (id, focused): (String, i64) = conn
+                .query_row(
+                    "SELECT id, focused_duration_seconds FROM focus_sessions LIMIT 1",
+                    [],
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                )
+                .unwrap();
+            assert_eq!(id, "s-x", "migration v{target} rewrote the row id");
+            assert_eq!(focused, 1500, "migration v{target} lost focused duration");
+        }
+    }
+
+    #[test]
+    fn upgrading_from_the_oldest_schema_keeps_every_record() {
+        let migrations = migrations();
+        let mut conn = Connection::open_in_memory().unwrap();
+        conn.pragma_update(None, "foreign_keys", true).unwrap();
+        migrations.to_version(&mut conn, 1).unwrap();
+        seed_session(&conn, "a");
+        seed_session(&conn, "b");
+
+        migrations.to_latest(&mut conn).unwrap();
+
+        assert_eq!(session_count(&conn), 2);
+        // The campaign migration backfilled the pre-existing missions too.
+        let attributed: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM missions WHERE campaign_id = 'default'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(attributed, 2);
+    }
+
+    #[test]
+    fn re_running_migrations_on_a_populated_database_changes_nothing() {
+        let migrations = migrations();
+        let mut conn = Connection::open_in_memory().unwrap();
+        conn.pragma_update(None, "foreign_keys", true).unwrap();
+        migrations.to_latest(&mut conn).unwrap();
+        seed_session(&conn, "z");
+        let before = session_count(&conn);
+
+        migrations.to_latest(&mut conn).unwrap();
+
+        assert_eq!(session_count(&conn), before);
+    }
+
     #[test]
     fn foreign_keys_are_enforced() {
         let conn = open(":memory:").unwrap();
