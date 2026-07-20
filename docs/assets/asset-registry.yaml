@@ -200,6 +200,119 @@ assets:
         supplied and approved before the v0.1.0 release; scaffold screenshots are
         not production baselines.
 
+  - id: PROD-RANK-001
+    name: Rank badge set
+    category: ui-icon
+    status: request-user
+    optional: true
+    required_by: v0.5.0
+    reference: PROD-UI-001
+    requested_format:
+      - transparent-png
+    sizes_px:
+      - [32, 32]
+      - [64, 64]
+    required_items:
+      - tiro
+      - miles
+      - immunis
+      - decanus
+      - tesserarius
+      - optio
+      - centurio
+      - primus-pilus
+    exact_requirements:
+      - rising visual weight without loss or punishment framing
+    notes: >-
+      Optional. Without it the rank keeps its text name plus Roman numeral.
+
+  - id: PROD-ONBOARD-001
+    name: Onboarding and empty-state illustrations
+    category: illustration
+    status: request-user
+    required_by: v0.5.0
+    reference: REF-UI-001
+    requested_format:
+      - aseprite-or-layered-source
+      - transparent-png
+    required_states:
+      - welcome-tour
+      - empty-history
+      - empty-camp
+    exact_requirements:
+      - identical palette to the companion sprite set
+      - no baked text (all copy stays live HTML)
+
+  - id: PROD-FONT-001
+    name: Product typography
+    category: font
+    status: request-user
+    optional: true
+    required_by: v0.5.0
+    current_fallback: system fonts (Georgia, Consolas)
+    required_roles:
+      - display-or-wordmark
+      - body-small-legible
+      - tabular-numerals-for-the-timer
+    exact_requirements:
+      - turkish glyph coverage
+      - embedding and redistribution licence required
+      - licence document must accompany the file
+    notes: >-
+      Optional. Staying on system fonts carries no licence risk.
+
+  - id: PROD-INSTALL-001
+    name: Installer wizard artwork
+    category: distribution
+    status: request-user
+    required_by: v0.5.0
+    requested_files:
+      - nsis-header-banner-150x57
+      - nsis-sidebar-164x314
+      - msi-banner-493x58
+      - msi-dialog-493x312
+    exact_requirements:
+      - no baked text (localisation)
+      - readable at low resolution
+
+  - id: PROD-STORE-001
+    name: Marketplace listing kit
+    category: distribution
+    status: request-user
+    required_by: v0.8.0
+    blocked_by_decision: distribution channel not chosen
+    channel_specs:
+      microsoft-store:
+        - store-logo-300x300
+        - tiles-71x71-150x150-310x150-310x310
+        - splash-620x300
+        - screenshots-min-1366x768
+      itch-io:
+        - cover-630x500
+        - banner
+        - screenshots
+        - gif-preview
+      steam:
+        - header-460x215
+        - small-capsule-231x87
+        - main-capsule-616x353
+        - library-600x900
+        - hero-3840x1240
+    exact_requirements:
+      - screenshots must come from the real app after art lock
+
+  - id: PROD-WEB-001
+    name: Web, social and documentation imagery
+    category: distribution
+    status: request-user
+    required_by: v0.8.0
+    requested_files:
+      - social-preview-1200x630
+      - favicon-16-32-48-and-ico
+      - readme-hero-1280x640
+    exact_requirements:
+      - screenshots must come from the real app after art lock
+
   - id: PROD-AUDIO-001
     name: Focus ritual sound set
     category: audio

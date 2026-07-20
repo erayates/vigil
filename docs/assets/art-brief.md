@@ -16,14 +16,30 @@ değişmemesi gerektiği.
 
 ## 0. Özet tablo
 
-| ID               | Ne                            | Öncelik | Durum          | Bloke ettiği iş   |
-| ---------------- | ----------------------------- | ------- | -------------- | ----------------- |
-| `PROD-COMP-001`  | Companion (legionary) sprite  | Yüksek  | `request-user` | Art-lock, v0.5.0  |
-| `PROD-UI-001`    | UI kit (çerçeve/buton/ikon)   | Yüksek  | `request-user` | Art-lock, v0.5.0  |
-| `PROD-CAMP-001`  | Kamp büyüme sahnesi           | Orta    | `request-user` | **VIGIL-029**     |
-| `PROD-COMP-002`  | Kozmetik ekipman overlay'leri | Orta    | `request-user` | **VIGIL-030**     |
-| `PROD-BRAND-001` | Marka / uygulama ikonu        | Orta    | `request-user` | v0.5.0 brand lock |
-| `PROD-AUDIO-001` | Ses seti (görsel değil)       | Düşük   | `request-user` | —                 |
+### Uygulama içi
+
+| ID                 | Ne                                | Öncelik | Bloke ettiği iş   |
+| ------------------ | --------------------------------- | ------- | ----------------- |
+| `PROD-COMP-001`    | Companion (legionary) sprite      | Yüksek  | Art-lock, v0.5.0  |
+| `PROD-UI-001`      | UI kit (çerçeve/buton/ikon)       | Yüksek  | Art-lock, v0.5.0  |
+| `PROD-CAMP-001`    | Kamp büyüme sahnesi               | Orta    | **VIGIL-029**     |
+| `PROD-COMP-002`    | Kozmetik ekipman overlay'leri     | Orta    | **VIGIL-030**     |
+| `PROD-RANK-001`    | Rütbe rozetleri (8) — opsiyonel   | Düşük   | —                 |
+| `PROD-ONBOARD-001` | Onboarding + boş durum görselleri | Orta    | v0.5.0 onboarding |
+| `PROD-FONT-001`    | Tipografi (lisans!) — opsiyonel   | Orta    | v0.5.0 brand lock |
+
+### Marka ve dağıtım
+
+| ID                 | Ne                              | Öncelik | Bloke ettiği iş    |
+| ------------------ | ------------------------------- | ------- | ------------------ |
+| `PROD-BRAND-001`   | Marka, uygulama/tepsi ikonu     | Yüksek  | v0.5.0 brand lock  |
+| `PROD-INSTALL-001` | Kurulum sihirbazı görselleri    | Orta    | v0.5.0 dağıtım     |
+| `PROD-STORE-001`   | Marketplace / mağaza kiti       | Orta    | v0.8.0 public beta |
+| `PROD-WEB-001`     | Web, sosyal, doküman görselleri | Düşük   | v0.8.0 public beta |
+| `PROD-AUDIO-001`   | Ses seti (görsel değil)         | Düşük   | —                  |
+
+> Mağaza ve web görselleri **art-lock'tan sonra** üretilmeli: scaffold ekranlarla
+> mağaza görseli çekilemez.
 
 ---
 
@@ -201,20 +217,114 @@ WAV, normalize edilmiş, agresif savaş efekti olmayan, sahibi/lisansı belli.
 
 ---
 
-## 8. Şu an yerine geçilecek placeholder'lar
+## 8. `PROD-RANK-001` — Rütbe rozetleri _(opsiyonel)_
 
-| Placeholder                                     | Yerine geçecek                   |
-| ----------------------------------------------- | -------------------------------- |
-| `public/assets/pixel/legionary-*.png` (6 sheet) | `PROD-COMP-001`                  |
-| `public/assets/ui/frames/*.png` (4)             | `PROD-UI-001`                    |
-| `public/assets/ui/textures/*.png` (6)           | `PROD-UI-001`                    |
-| `public/assets/brand/vigil-mark-*.png` (4)      | `PROD-BRAND-001`                 |
-| `src-tauri/icons/*` (ico/icns/png)              | `PROD-BRAND-001`                 |
-| (yok — yeni)                                    | `PROD-CAMP-001`, `PROD-COMP-002` |
+**Nerede:** Disciplina ile kazanılan 8 rütbe. Şu an sadece metin + Roma rakamı
+gösteriliyor (özet şeridi ve companion sancağı).
+
+| Özellik | Değer                                                                        |
+| ------- | ---------------------------------------------------------------------------- |
+| Ölçü    | **32 × 32** ve **64 × 64** saydam PNG                                        |
+| Adet    | 8: Tiro, Miles, Immunis, Decanus, Tesserarius, Optio, Centurio, Primus Pilus |
+
+**Kural:** rütbeler yükseldikçe görsel ağırlık artmalı, ama hiçbiri "kaybetme/ceza"
+hissi vermemeli (progression guardrail'leri). **Vermezsen** mevcut metin gösterimi
+kalır — bu varlık zorunlu değil.
 
 ---
 
-## 9. Teslim
+## 9. `PROD-ONBOARD-001` — İlk çalıştırma ve boş durum görselleri
+
+**Nerede:** v0.5.0 onboarding turu + veri yokken görünen ekranlar.
+
+| Görsel                         | Nerede                                       |
+| ------------------------------ | -------------------------------------------- |
+| Karşılama / tanıtım (2–3 adım) | İlk açılışta                                 |
+| "Henüz nöbet yok"              | Geçmiş ve haftalık özet boşken               |
+| "Kamp henüz kurulmadı"         | Kamp sahnesi ilk aşamadan önce _(opsiyonel)_ |
+
+Saydam PNG, aynı palet, metin gömülmeden (yazılar HTML).
+
+---
+
+## 10. `PROD-FONT-001` — Tipografi _(opsiyonel ama önemli)_
+
+**Şu an:** sistem fontları — `Georgia` (gövde) ve `Consolas` (sayaç/etiketler).
+Pixel-art kabukla tam uyumlu değil.
+
+| İhtiyaç           | Not                                                          |
+| ----------------- | ------------------------------------------------------------ |
+| Başlık / wordmark | Pixel veya Roma-serif karakterli                             |
+| Gövde             | Küçük puntoda okunur; **Türkçe karakterler** (ğ ş ı İ ö ü ç) |
+| Sayaç (rakamlar)  | **Sabit genişlik** — rakam değişince zıplamamalı             |
+
+**⚠️ Lisans kritik:** font uygulamayla dağıtılacaksa **gömme (embedding) ve yeniden
+dağıtım izni** olmalı; lisans belgesi dosyayla birlikte gelmeli. **Alternatif:**
+sistem fontlarıyla devam — sıfır lisans riski, ek maliyet yok.
+
+---
+
+## 11. `PROD-INSTALL-001` — Kurulum paketi görselleri
+
+**Nerede:** Windows kurulum sihirbazı (Tauri NSIS/MSI). Şu an varsayılan görünüm
+kullanılıyor — markasız.
+
+| Görsel                         | Ölçü                          |
+| ------------------------------ | ----------------------------- |
+| NSIS üst banner                | **150 × 57 px**               |
+| NSIS karşılama/bitiş kenarı    | **164 × 314 px**              |
+| MSI (WiX) banner               | **493 × 58 px**               |
+| MSI iletişim kutusu arka planı | **493 × 312 px**              |
+| Kurulum ikonu                  | `.ico` (`PROD-BRAND-001`'den) |
+
+**Kural:** metin gömülmemeli (yerelleştirme), düşük çözünürlükte okunur kalmalı.
+
+---
+
+## 12. `PROD-STORE-001` — Marketplace / mağaza kiti
+
+**⚠️ Önce senden karar gerekiyor: hangi kanaldan dağıtacaksın?** Gereken ölçüler
+kanala göre değişir; kanal netleşmeden bu varlık spesifik hâle gelmez.
+
+| Kanal                    | Gereken görseller                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| **Microsoft Store**      | Store logo 300×300; kutucuklar 71×71, 150×150, 310×150, 310×310; splash 620×300; ekran görüntüleri min 1366×768 (4–6 adet) |
+| **itch.io**              | Kapak 630×500 (min 315×250); banner; ekran görüntüleri; GIF önizleme                                                       |
+| **Steam** _(ileride)_    | Header 460×215; küçük kapsül 231×87; ana kapsül 616×353; kütüphane 600×900; hero 3840×1240                                 |
+| **Kendi siten / GitHub** | Hero görseli + ekran görüntüleri (bkz. §13)                                                                                |
+
+**Ortak kural:** ekran görüntüleri **gerçek uygulamadan**, **art-lock sonrası**
+alınmalı. Scaffold ekranlarla mağaza görseli üretilmez.
+
+---
+
+## 13. `PROD-WEB-001` — Web, sosyal ve doküman görselleri
+
+| Görsel                       | Ölçü                                        |
+| ---------------------------- | ------------------------------------------- |
+| Sosyal önizleme (OG/Twitter) | **1200 × 630 px**                           |
+| Favicon                      | **16, 32, 48 px** + `.ico`                  |
+| README / landing hero        | ~**1280 × 640 px**                          |
+| Özellik anlatım görselleri   | Gerçek ekran görüntüleri (art-lock sonrası) |
+
+---
+
+## 14. Şu an yerine geçilecek placeholder'lar
+
+| Placeholder                                     | Yerine geçecek                                                                                          |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `public/assets/pixel/legionary-*.png` (6 sheet) | `PROD-COMP-001`                                                                                         |
+| `public/assets/ui/frames/*.png` (4)             | `PROD-UI-001`                                                                                           |
+| `public/assets/ui/textures/*.png` (6)           | `PROD-UI-001`                                                                                           |
+| `public/assets/brand/vigil-mark-*.png` (4)      | `PROD-BRAND-001`                                                                                        |
+| `src-tauri/icons/*` (ico/icns/png)              | `PROD-BRAND-001`                                                                                        |
+| Sistem fontları (Georgia / Consolas)            | `PROD-FONT-001` _(istersen)_                                                                            |
+| Tauri varsayılan kurulum sihirbazı              | `PROD-INSTALL-001`                                                                                      |
+| (yok — henüz üretilmedi)                        | `PROD-CAMP-001`, `PROD-COMP-002`, `PROD-RANK-001`, `PROD-ONBOARD-001`, `PROD-STORE-001`, `PROD-WEB-001` |
+
+---
+
+## 15. Teslim
 
 1. Kaynak dosyaları (Aseprite/PSD) + PNG export'ları birlikte gönder.
 2. Kaynak `assets/source/` altında **değiştirilmeden** saklanır; uygulama export'ları
