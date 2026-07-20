@@ -1,4 +1,4 @@
-import { calculateDisciplina } from '@/entities/focus-session/lib/disciplina';
+import { resolveDisciplina } from '@/entities/focus-session/lib/disciplina';
 import { calculateRank } from '@/entities/focus-session/lib/rank';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { nativeBridge } from '@/shared/lib/native-bridge';
@@ -19,7 +19,8 @@ const messageByPhase = {
 export function CompanionStage() {
   const phase = useFocusStore((state) => state.phase);
   const history = useFocusStore((state) => state.history);
-  const rank = calculateRank(calculateDisciplina(history).points);
+  const lifetime = useFocusStore((state) => state.lifetime);
+  const rank = calculateRank(resolveDisciplina(lifetime, history).points);
 
   return (
     <aside

@@ -29,3 +29,17 @@ export function calculateDisciplina(records: SessionRecord[]): Disciplina {
   );
   return disciplinaFromTotals(completed.length, completedFocusedSeconds);
 }
+
+/**
+ * Disciplina from the authoritative lifetime totals when present (Tauri), else
+ * from the local records (browser). Both windows call this, so they can never
+ * show a different rank for the same user.
+ */
+export function resolveDisciplina(
+  lifetime: { completedWatches: number; completedFocusedSeconds: number } | null,
+  records: SessionRecord[],
+): Disciplina {
+  return lifetime
+    ? disciplinaFromTotals(lifetime.completedWatches, lifetime.completedFocusedSeconds)
+    : calculateDisciplina(records);
+}

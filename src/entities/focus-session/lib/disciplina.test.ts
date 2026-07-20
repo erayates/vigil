@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionRecord } from '@/entities/focus-session/model/types';
-import { calculateDisciplina, disciplinaFromTotals } from './disciplina';
+import { calculateDisciplina, disciplinaFromTotals, resolveDisciplina } from './disciplina';
 
 function record(overrides: Partial<SessionRecord>): SessionRecord {
   return {
@@ -38,5 +38,14 @@ describe('calculateDisciplina', () => {
     expect(d.completedWatches).toBe(60);
     expect(d.focusedMinutes).toBe(1500);
     expect(d.points).toBe(2100); // 60*10 + 1500
+  });
+
+  it('prefers lifetime totals over the local records, and falls back without them', () => {
+    const records = [record({ id: 'a', outcome: 'completed', focusedDurationSeconds: 1500 })];
+    // Lifetime wins even though the local list holds only one record.
+    expect(resolveDisciplina({ completedWatches: 60, completedFocusedSeconds: 90_000 }, records))
+      .toEqual(disciplinaFromTotals(60, 90_000));
+    // No aggregate (browser) → derive from records.
+    expect(resolveDisciplina(null, records)).toEqual(calculateDisciplina(records));
   });
 });

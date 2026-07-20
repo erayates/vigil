@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { calculateDisciplina, disciplinaFromTotals } from '@/entities/focus-session/lib/disciplina';
+import { resolveDisciplina } from '@/entities/focus-session/lib/disciplina';
 import { calculateFormationIntegrity, dayKey } from '@/entities/focus-session/lib/formation';
 import { calculateRank } from '@/entities/focus-session/lib/rank';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
@@ -63,13 +63,7 @@ export function CampaignSummary() {
     };
   }, [history]);
   const maxDaySeconds = Math.max(1, ...weekDays.map((day) => day.seconds));
-  const disciplina = useMemo(
-    () =>
-      lifetime
-        ? disciplinaFromTotals(lifetime.completedWatches, lifetime.completedFocusedSeconds)
-        : calculateDisciplina(history),
-    [lifetime, history],
-  );
+  const disciplina = useMemo(() => resolveDisciplina(lifetime, history), [lifetime, history]);
   const rank = useMemo(() => calculateRank(disciplina.points), [disciplina.points]);
   const recoveryDays = useRecoveryStore((state) => state.recoveryDays);
   const toggleRecoveryDay = useRecoveryStore((state) => state.toggleDay);
