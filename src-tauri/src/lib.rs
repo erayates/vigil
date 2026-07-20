@@ -341,6 +341,27 @@ fn session_end_break(
     Ok(snapshot)
 }
 
+/// Exclude a detected away/sleep interval from the running watch's focused time.
+#[tauri::command]
+fn session_discount_gap(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, Mutex<SessionState>>,
+    db: tauri::State<'_, Mutex<Connection>>,
+    gap_ms: i64,
+) -> Result<SessionSnapshot, String> {
+    let now = now_ms();
+    let snapshot = {
+        let mut session = state.lock().unwrap();
+        session
+            .discount_gap(gap_ms)
+            .map_err(|_| "invalid transition".to_string())?;
+        persist(&db, &session, now);
+        session.snapshot(now)
+    };
+    broadcast(&app, &snapshot);
+    Ok(snapshot)
+}
+
 #[tauri::command]
 fn session_history(
     db: tauri::State<'_, Mutex<Connection>>,
@@ -727,6 +748,7 @@ pub fn run() {
             session_history,
             session_start_break,
             session_end_break,
+            session_discount_gap,
             campaign_get,
             campaign_create,
             campaign_set_active,

@@ -39,6 +39,9 @@ export function FocusChamber() {
     openDebrief,
     recordDebrief,
     endBreak,
+    pendingGapMs,
+    keepGapAsFocus,
+    excludeGap,
     tick,
   } = useFocusStore();
 
@@ -127,6 +130,23 @@ export function FocusChamber() {
       <div className="focus-progress" aria-label={`${Math.round(elapsedPercent)} percent elapsed`}>
         <div style={{ width: `${elapsedPercent}%` }} />
       </div>
+
+      {pendingGapMs !== null && (
+        <div className="gap-prompt" role="status">
+          <span>
+            This machine was away for about {Math.max(1, Math.round(pendingGapMs / 60000))} min
+            during the watch. Count it as focus?
+          </span>
+          <div className="gap-prompt-actions">
+            <button type="button" onClick={keepGapAsFocus}>
+              Count as focus
+            </button>
+            <button type="button" onClick={excludeGap}>
+              I was away
+            </button>
+          </div>
+        </div>
+      )}
 
       {phase === 'debrief' ? (
         <DebriefForm

@@ -214,6 +214,19 @@ impl SessionState {
         Ok(())
     }
 
+    /// Exclude an away interval (machine sleep, a frozen process) from focused
+    /// time by accounting for it exactly like paused time. Only the user asks for
+    /// this — detection alone never removes focus time.
+    pub fn discount_gap(&mut self, gap_ms: i64) -> Result<(), SessionError> {
+        if !matches!(self.phase, Phase::Focusing | Phase::Paused) {
+            return Err(SessionError::InvalidTransition);
+        }
+        if gap_ms > 0 {
+            self.total_paused_ms += gap_ms;
+        }
+        Ok(())
+    }
+
     pub fn reset(&mut self) {
         *self = SessionState::idle();
     }
@@ -494,6 +507,26 @@ mod tests {
             .start("a".into(), "b".into(), "m".into(), String::new(), 900)
             .is_ok());
         assert_eq!(s.phase, Phase::Preparing);
+    }
+
+    #[test]
+    fn discounting_a_sleep_gap_removes_it_from_focused_time() {
+        let mut s = started(); // focusing, started at 0, planned 1500s
+                               // Ten minutes of wall clock passed...
+        assert_eq!(s.focused_secs(600_000), 600);
+        // ...but five of them were the machine asleep.
+        s.discount_gap(300_000).unwrap();
+        assert_eq!(s.focused_secs(600_000), 300);
+        assert_eq!(s.remaining_secs(600_000), 1200);
+    }
+
+    #[test]
+    fn discount_gap_rejected_outside_a_running_watch() {
+        let mut idle = SessionState::idle();
+        assert!(matches!(
+            idle.discount_gap(1_000),
+            Err(SessionError::InvalidTransition)
+        ));
     }
 
     #[test]

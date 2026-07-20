@@ -65,6 +65,37 @@ describe('FocusChamber debrief flow', () => {
     expect(hide).toHaveBeenCalled();
   });
 
+  it('offers to exclude a detected away interval and applies it as paused time', () => {
+    useFocusStore.setState({
+      phase: 'focusing',
+      startedAtMs: Date.now(),
+      totalPausedMs: 0,
+      pendingGapMs: 300_000, // five minutes of machine sleep
+    });
+    render(<FocusChamber />);
+
+    expect(screen.getByText(/away for about 5 min/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'I was away' }));
+
+    expect(useFocusStore.getState().totalPausedMs).toBe(300_000);
+    expect(useFocusStore.getState().pendingGapMs).toBeNull();
+  });
+
+  it('keeps a detected gap as focus when the user says so', () => {
+    useFocusStore.setState({
+      phase: 'focusing',
+      startedAtMs: Date.now(),
+      totalPausedMs: 0,
+      pendingGapMs: 300_000,
+    });
+    render(<FocusChamber />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Count as focus' }));
+
+    expect(useFocusStore.getState().totalPausedMs).toBe(0);
+    expect(useFocusStore.getState().pendingGapMs).toBeNull();
+  });
+
   it('ends a running break back to idle', () => {
     useFocusStore.setState({
       phase: 'break',

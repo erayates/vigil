@@ -30,7 +30,7 @@ remaining = max(0, plannedDuration - activeElapsed)
 ## Recovery rules
 
 - On restart, load active session and recompute from timestamps.
-- If the system was sleeping, elapsed wall time counts as focus by default for v0.1.0; v0.2.0 may detect suspend/resume and ask the user to classify the interval.
+- If the system was sleeping, elapsed wall time counts as focus **by default**. Since v0.4.0 the watch notices a tick gap far larger than the tick interval and offers the user a choice: keep it as focus (the default — ignoring the offer changes nothing) or mark it as away, which accounts for the interval exactly like paused time. Detection alone never removes focus time.
 - If stored state is invalid, preserve a recovery record and return to Idle rather than silently deleting it.
 
 ## Command idempotency

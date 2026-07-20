@@ -78,6 +78,7 @@ export const sessionBridge = {
   record: (fields: DebriefFields) => call('session_record', { ...fields }),
   startBreak: (plannedDurationSecs: number) => call('session_start_break', { plannedDurationSecs }),
   endBreak: () => call('session_end_break'),
+  discountGap: (gapMs: number) => call('session_discount_gap', { gapMs }),
   reset: () => call('session_reset'),
   history: async (): Promise<HistoryRecordDto[]> => {
     if (!isTauriRuntime()) return [];

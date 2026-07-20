@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { focusModes } from '@/entities/focus-session/model/modes';
+import { detectSuspendGap } from '@/entities/focus-session/lib/suspend';
 import { calculateRemainingSeconds } from '@/entities/focus-session/lib/time';
 import type { FocusModeId, FocusPhase, SessionRecord } from '@/entities/focus-session/model/types';
 import {
@@ -21,6 +22,10 @@ interface FocusState {
   startedAtMs: number | null;
   pauseStartedAtMs: number | null;
   totalPausedMs: number;
+  /** Wall clock of the last tick, used to notice the machine slept. */
+  lastTickMs: number | null;
+  /** An away interval the user has not classified yet. */
+  pendingGapMs: number | null;
   history: SessionRecord[];
   setMissionTitle: (value: string) => void;
   setVictoryCondition: (value: string) => void;
@@ -38,6 +43,8 @@ interface FocusState {
   recordDebrief: (fields: DebriefFields) => void;
   startBreak: (plannedDurationSecs: number) => void;
   endBreak: () => void;
+  keepGapAsFocus: () => void;
+  excludeGap: () => void;
   resetSession: () => void;
 }
 
@@ -62,6 +69,8 @@ export const useFocusStore = create<FocusState>()(
       startedAtMs: null,
       pauseStartedAtMs: null,
       totalPausedMs: 0,
+      lastTickMs: null,
+      pendingGapMs: null,
       history: [],
       setMissionTitle: (missionTitle) => set({ missionTitle }),
       setVictoryCondition: (victoryCondition) => set({ victoryCondition }),
@@ -78,7 +87,10 @@ export const useFocusStore = create<FocusState>()(
         });
       },
       // Authoritative snapshot from the Rust core (Tauri only), mirrored into the store.
-      applySnapshot: (snapshot) =>
+      applySnapshot: (snapshot) => {
+        // Any phase change (including pause/resume driven from the other window)
+        // restarts the gap clock, so a pause is never mistaken for machine sleep.
+        const phaseChanged = get().phase !== snapshot.phase;
         set({
           phase: snapshot.phase,
           missionTitle: snapshot.missionTitle,
@@ -88,7 +100,10 @@ export const useFocusStore = create<FocusState>()(
           startedAtMs: snapshot.startedAtMs,
           totalPausedMs: snapshot.totalPausedMs,
           pauseStartedAtMs: snapshot.pauseStartedAtMs,
-        }),
+          ...(phaseChanged ? { lastTickMs: null } : {}),
+          ...(snapshot.phase === 'preparing' ? { pendingGapMs: null } : {}),
+        });
+      },
       setHistory: (history) => set({ history }),
       startSession: () => {
         const state = get();
@@ -113,6 +128,8 @@ export const useFocusStore = create<FocusState>()(
           startedAtMs: null,
           pauseStartedAtMs: null,
           totalPausedMs: 0,
+          lastTickMs: null,
+          pendingGapMs: null,
         });
         window.setTimeout(() => {
           if (get().phase === 'preparing') {
@@ -127,7 +144,7 @@ export const useFocusStore = create<FocusState>()(
           return;
         }
         get().tick();
-        set({ phase: 'paused', pauseStartedAtMs: Date.now() });
+        set({ phase: 'paused', pauseStartedAtMs: Date.now(), lastTickMs: null });
       },
       resumeSession: () => {
         const state = get();
@@ -141,6 +158,7 @@ export const useFocusStore = create<FocusState>()(
           phase: 'focusing',
           pauseStartedAtMs: null,
           totalPausedMs: state.totalPausedMs + additionalPauseMs,
+          lastTickMs: null,
         });
       },
       // Drives both the focus countdown and the break countdown from the
@@ -149,6 +167,12 @@ export const useFocusStore = create<FocusState>()(
         const state = get();
         if (state.startedAtMs === null) return;
         if (state.phase !== 'focusing' && state.phase !== 'break') return;
+
+        // A tick gap far larger than the interval means the clock ran on without
+        // us — the machine slept. Only recorded as an offer; never applied here.
+        const gap = state.phase === 'focusing' ? detectSuspendGap(state.lastTickMs, nowMs) : null;
+        const gapPatch = gap === null ? {} : { pendingGapMs: (state.pendingGapMs ?? 0) + gap };
+
         const remainingSeconds = calculateRemainingSeconds({
           plannedDurationSeconds: state.plannedDurationSeconds,
           startedAtMs: state.startedAtMs,
@@ -156,12 +180,12 @@ export const useFocusStore = create<FocusState>()(
           totalPausedMs: state.totalPausedMs,
         });
         if (remainingSeconds === 0) {
-          set({ remainingSeconds: 0 });
+          set({ remainingSeconds: 0, lastTickMs: nowMs, ...gapPatch });
           if (state.phase === 'focusing') get().completeSession();
           else get().endBreak();
           return;
         }
-        set({ remainingSeconds });
+        set({ remainingSeconds, lastTickMs: nowMs, ...gapPatch });
       },
       completeSession: () => {
         const state = get();
@@ -251,9 +275,23 @@ export const useFocusStore = create<FocusState>()(
           startedAtMs: Date.now(),
           pauseStartedAtMs: null,
           totalPausedMs: 0,
+          lastTickMs: null,
           missionTitle: '',
           victoryCondition: '',
         });
+      },
+      // The user's answer to a detected away interval. Keeping it is the default:
+      // ignoring the offer leaves the time counted as focus, exactly as before.
+      keepGapAsFocus: () => set({ pendingGapMs: null }),
+      excludeGap: () => {
+        const gap = get().pendingGapMs;
+        if (gap === null || gap <= 0) return;
+        if (isTauriRuntime()) {
+          void sessionBridge.discountGap(gap);
+          set({ pendingGapMs: null });
+          return;
+        }
+        set({ totalPausedMs: get().totalPausedMs + gap, pendingGapMs: null });
       },
       endBreak: () => {
         const state = get();

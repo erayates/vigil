@@ -554,7 +554,7 @@ items:
   - id: VIGIL-033
     phase: P4
     version: 0.4.0
-    status: planned
+    status: done
     priority: P1
     title: Detect and classify suspend/resume gaps
     asset_dependencies:
