@@ -28,6 +28,14 @@ export function CompanionOverlay() {
     return () => window.clearInterval(intervalId);
   }, [phase, tick]);
 
+  // The companion window is hidden outside a watch, but WebView2 keeps painting
+  // it — a sprite animating behind a hidden window cost measurable CPU all day.
+  // Park it whenever there is nothing to watch. See docs/quality/idle-resource-budget.md.
+  useEffect(() => {
+    const watching = phase === 'focusing' || phase === 'break' || phase === 'paused';
+    document.documentElement.classList.toggle('is-window-unfocused', !watching);
+  }, [phase]);
+
   return (
     <main
       className="overlay-root"

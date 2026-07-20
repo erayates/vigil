@@ -23,6 +23,25 @@ function finishedRecord(overrides: Partial<SessionRecord> = {}): SessionRecord {
   };
 }
 
+describe('FocusChamber idle cost', () => {
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it('runs no timer while idle, so an open window costs nothing', () => {
+    vi.useFakeTimers();
+    useFocusStore.setState({ phase: 'idle', missionTitle: '' });
+    const tick = vi.spyOn(useFocusStore.getState(), 'tick');
+
+    render(<FocusChamber />);
+    vi.advanceTimersByTime(60_000);
+
+    expect(tick).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
 describe('FocusChamber debrief flow', () => {
   afterEach(() => {
     cleanup();

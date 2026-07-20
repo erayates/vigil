@@ -1,3 +1,4 @@
+import { pauseAnimationsWhenUnfocused } from '@/shared/lib/pause-when-unfocused';
 import { CompanionOverlay } from '@/widgets/companion-overlay/companion-overlay';
 import { MainShell } from '@/widgets/main-shell/main-shell';
 
@@ -7,6 +8,9 @@ function currentView(): 'main' | 'companion' {
     : 'main';
 }
 
+const view = currentView();
+if (view === 'main') pauseAnimationsWhenUnfocused();
+
 export function App() {
-  return currentView() === 'companion' ? <CompanionOverlay /> : <MainShell />;
+  return view === 'companion' ? <CompanionOverlay /> : <MainShell />;
 }

@@ -136,6 +136,15 @@ textarea::placeholder {
   border: 0;
 }
 
+/* An unfocused window is either buried or minimised, and nobody is watching it
+   flicker. WebView2 paints it anyway, so park every animation until it comes
+   back. See docs/quality/idle-resource-budget.md for the measurement. */
+.is-window-unfocused *,
+.is-window-unfocused *::before,
+.is-window-unfocused *::after {
+  animation-play-state: paused !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
