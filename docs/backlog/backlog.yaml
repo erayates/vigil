@@ -526,7 +526,7 @@ items:
   - id: VIGIL-031
     phase: P3
     version: 0.3.0
-    status: planned
+    status: done
     priority: P1
     title: Progression guardrail review
     asset_dependencies:
