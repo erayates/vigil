@@ -624,7 +624,7 @@ items:
   - id: VIGIL-038
     phase: P4
     version: 0.4.0
-    status: planned
+    status: done
     priority: P1
     title: Capability and dependency security audit
     asset_dependencies:
