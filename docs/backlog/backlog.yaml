@@ -582,7 +582,7 @@ items:
   - id: VIGIL-035
     phase: P4
     version: 0.4.0
-    status: planned
+    status: done
     priority: P1
     title: Reduced-motion and screen-reader review
     asset_dependencies:

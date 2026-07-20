@@ -44,7 +44,18 @@ describe('MainShell', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Deep Formation, 50 minutes' }));
 
-    expect(screen.getByLabelText('3000 seconds remaining')).toHaveTextContent('50:00');
+    expect(screen.getByLabelText('50 minutes remaining')).toHaveTextContent('50:00');
+  });
+
+  it('gives every control an accessible name', () => {
+    render(<MainShell />);
+
+    // A name filter of /\S/ keeps only controls with a computed accessible
+    // name, so any control that grows an icon and loses its label fails here.
+    for (const role of ['button', 'radio', 'textbox'] as const) {
+      const named = screen.getAllByRole(role, { name: /\S/ });
+      expect(screen.getAllByRole(role)).toHaveLength(named.length);
+    }
   });
 
   it('announces the session phase without a per-second live region', () => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { formatDuration } from '@/entities/focus-session/lib/time';
+import { describeDuration, formatDuration } from '@/entities/focus-session/lib/time';
 import { useFocusStore } from '@/features/focus-session/model/use-focus-store';
 import { nativeBridge } from '@/shared/lib/native-bridge';
 import { DebriefForm } from './debrief-form';
@@ -111,7 +111,8 @@ export function FocusChamber() {
         <span className="laurel laurel--left" aria-hidden="true">
           ❧
         </span>
-        <time aria-label={`${remainingSeconds} seconds remaining`}>
+        {/* Not a live region: the countdown must never be announced every second. */}
+        <time aria-label={`${describeDuration(remainingSeconds)} remaining`}>
           {formatDuration(remainingSeconds)}
         </time>
         <span className="laurel laurel--right" aria-hidden="true">

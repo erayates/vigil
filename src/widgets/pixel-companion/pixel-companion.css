@@ -45,6 +45,15 @@
   animation-iteration-count: 2;
 }
 
+/* Without motion the companion still has to be a legionary, not half of two
+   frames. Pin it to the first pose instead of leaving the freeze to chance. */
+@media (prefers-reduced-motion: reduce) {
+  .legionary-sprite {
+    animation: none;
+    background-position-x: 0;
+  }
+}
+
 @keyframes legionary-frames {
   from {
     background-position-x: 0;
